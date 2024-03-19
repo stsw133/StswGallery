@@ -85,7 +85,7 @@ internal class GalleryContext : StswObservableObject
     /// Command: key `number`
     private void KeyNumber(object? number)
     {
-        if (DirectoryPath == null)
+        if (DirectoryPath == null || IsConfigOpen)
             return;
 
         var filesList = Directory.EnumerateFiles(DirectoryPath);
@@ -96,7 +96,11 @@ internal class GalleryContext : StswObservableObject
             /// action: MoveTo
             if ((ShortcutType)Properties.Settings.Default[$"Shortcut{number}Type"] == ShortcutType.MoveTo)
             {
-                var newPath = Path.Combine(Properties.Settings.Default[$"Shortcut{number}Value"].ToString()!, Path.GetFileName(currentFile));
+                var newDir = Properties.Settings.Default[$"Shortcut{number}Value"].ToString()!;
+                if (!Directory.Exists(newDir))
+                    return;
+
+                var newPath = Path.Combine(newDir, Path.GetFileName(currentFile));
                 if (currentFile != newPath && !File.Exists(newPath))
                     File.Move(currentFile, newPath);
                 else
@@ -198,4 +202,12 @@ internal class GalleryContext : StswObservableObject
         set => SetProperty(ref _imageSource, value);
     }
     private ImageSource? _imageSource;
+
+    /// IsConfigOpen
+    public bool IsConfigOpen
+    {
+        get => _isConfigOpen;
+        set => SetProperty(ref _isConfigOpen, value);
+    }
+    private bool _isConfigOpen;
 }

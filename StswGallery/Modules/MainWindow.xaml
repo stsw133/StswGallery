@@ -7,7 +7,5 @@
                xmlns:local="clr-namespace:StswGallery"
                mc:Ignorable="d" Height="450" Width="750" WindowStartupLocation="CenterScreen" WindowState="Maximized"
                Title="">
-    <se:StswContentDialog Identifier="Config">
-        <local:GalleryContext/>
-    </se:StswContentDialog>
+    <local:GalleryContext/>
 </se:StswWindow>

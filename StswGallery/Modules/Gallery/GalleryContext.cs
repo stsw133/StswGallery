@@ -1,77 +1,85 @@
-﻿using System.IO;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Media;
 
 namespace StswGallery;
-
 internal class GalleryContext : StswObservableObject
 {
-    public ICommand KeyLeftCommand { get; set; }
-    public ICommand KeyRightCommand { get; set; }
-    public ICommand KeyRefreshCommand { get; set; }
-    public ICommand KeyNumberCommand { get; set; }
     public ICommand SelectDirectoryCommand { get; set; }
+    public ICommand RefreshCommand { get; set; }
+    public ICommand ConfigCommand { get; set; }
+    public ICommand RemoveFileCommand { get; set; }
+    public ICommand KeyNumberCommand { get; set; }
+    public ICommand RandomFileCommand { get; set; }
+    public ICommand PreviousFileCommand { get; set; }
+    public ICommand NextFileCommand { get; set; }
 
     public GalleryContext()
     {
-        KeyLeftCommand = new StswCommand(KeyLeft);
-        KeyRightCommand = new StswCommand(KeyRight);
-        KeyRefreshCommand = new StswCommand(KeyRefresh);
-        KeyNumberCommand = new StswCommand<object?>(KeyNumber);
         SelectDirectoryCommand = new StswCommand(SelectDirectory);
+        RefreshCommand = new StswCommand(Refresh);
+        ConfigCommand = new StswCommand(Config);
+        RemoveFileCommand = new StswCommand(RemoveFile);
+        KeyNumberCommand = new StswCommand<object?>(KeyNumber);
+        RandomFileCommand = new StswCommand(RandomFile);
+        PreviousFileCommand = new StswCommand(PreviousFile);
+        NextFileCommand = new StswCommand(NextFile);
     }
 
     #region Events & methods
-    /// Command: key left
-    private void KeyLeft()
+    /// Command: select directory
+    private void SelectDirectory()
     {
-        if (DirectoryPath == null)
-            return;
-
-        string? filePath = null;
-        if (DirectoryPath != null && DirectoryFilesCounter > 0)
+        var dialog = new System.Windows.Forms.FolderBrowserDialog();
+        if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
         {
-            DirectoryFilesCounter--;
-            filePath = Directory.EnumerateFiles(DirectoryPath).Skip(DirectoryFilesCounter).First();
+            DirectoryPath = dialog.SelectedPath;
+
+            var filesList = Directory.EnumerateFiles(DirectoryPath).ToList();
+
+            DirectoryFilesCounter = 0;
+            ReadImageFromFile(filesList);
         }
-
-        if (filePath != null)
-            ImageSource = File.ReadAllBytes(filePath).ToBitmapImage();
-    }
-
-    /// Command: key right
-    private void KeyRight()
-    {
-        if (DirectoryPath == null)
-            return;
-
-        string? filePath = null;
-        if (DirectoryPath != null && DirectoryFilesCounter < Directory.EnumerateFiles(DirectoryPath).Count() - 1)
-        {
-            DirectoryFilesCounter++;
-            filePath = Directory.EnumerateFiles(DirectoryPath).Skip(DirectoryFilesCounter).First();
-        }
-
-        if (filePath != null)
-            ImageSource = File.ReadAllBytes(filePath).ToBitmapImage();
     }
 
     /// Command: refresh
-    private void KeyRefresh()
+    private void Refresh()
     {
         if (DirectoryPath == null)
             return;
 
-        string? filePath = null;
-        if (DirectoryPath != null && DirectoryFilesCounter < Directory.EnumerateFiles(DirectoryPath).Count())
-            filePath = Directory.EnumerateFiles(DirectoryPath).Skip(DirectoryFilesCounter).First();
-        else
-            KeyLeft();
+        var filesList = Directory.EnumerateFiles(DirectoryPath).ToList();
 
-        if (filePath != null)
-            ImageSource = File.ReadAllBytes(filePath).ToBitmapImage();
+        if (DirectoryFilesCounter < filesList.Count)
+            ReadImageFromFile(filesList);
+        else if (filesList.Count == 0)
+            ImageSource = null;
+        else
+            PreviousFile();
+    }
+
+    /// Command: config
+    private void Config()
+    {
+        StswContentDialog.Show(ConfigContext, "Config");
+    }
+
+    /// Command: remove file
+    private void RemoveFile()
+    {
+        if (DirectoryPath == null)
+            return;
+
+        var filesList = Directory.EnumerateFiles(DirectoryPath);
+
+        var currentFile = filesList.Skip(DirectoryFilesCounter).FirstOrDefault();
+        if (currentFile != null)
+            StswFn.MoveToRecycleBin(currentFile);
+
+        Refresh();
     }
 
     /// Command: key `number`
@@ -80,52 +88,114 @@ internal class GalleryContext : StswObservableObject
         if (DirectoryPath == null)
             return;
 
-        //var currentFile = Directory.EnumerateFiles(DirectoryPath).Skip(DirectoryFilesCounter).First();
-        //var newPath = Path.Combine(@$"", Path.GetFileName(currentFile));
-        //File.Move(currentFile, newPath);
-        KeyRefresh();
+        var filesList = Directory.EnumerateFiles(DirectoryPath);
+
+        var currentFile = filesList.Skip(DirectoryFilesCounter).FirstOrDefault();
+        if (currentFile != null)
+        {
+            /// action: MoveTo
+            if ((ShortcutType)Properties.Settings.Default[$"Shortcut{number}Type"] == ShortcutType.MoveTo)
+            {
+                var newPath = Path.Combine(Properties.Settings.Default[$"Shortcut{number}Value"].ToString()!, Path.GetFileName(currentFile));
+                if (currentFile != newPath && !File.Exists(newPath))
+                    File.Move(currentFile, newPath);
+                else
+                    NextFile();
+            }
+        }
+        Refresh();
     }
 
-    /// Command: select directory
-    private void SelectDirectory()
+    /// Command: random file
+    private void RandomFile()
     {
-        var dialog = new FolderBrowserDialog();
-        if (dialog.ShowDialog() == DialogResult.OK)
+        if (DirectoryPath == null)
+            return;
+
+        var filesList = Directory.EnumerateFiles(DirectoryPath).ToList();
+
+        DirectoryFilesCounter = new Random().Next(filesList.Count - 1);
+        ReadImageFromFile(filesList);
+    }
+
+    /// Command: previous file
+    private void PreviousFile()
+    {
+        if (DirectoryPath == null)
+            return;
+
+        var filesList = Directory.EnumerateFiles(DirectoryPath).ToList();
+
+        if (DirectoryFilesCounter > 0)
         {
-            DirectoryPath = dialog.SelectedPath;
-
-            DirectoryFilesCounter = 0;
-            var filePath = Directory.EnumerateFiles(DirectoryPath).Skip(DirectoryFilesCounter).First();
-
-            if (filePath != null)
-                ImageSource = File.ReadAllBytes(filePath).ToBitmapImage();
+            DirectoryFilesCounter--;
+            ReadImageFromFile(filesList);
         }
     }
+
+    /// Command: next file
+    private void NextFile()
+    {
+        if (DirectoryPath == null)
+            return;
+
+        var filesList = Directory.EnumerateFiles(DirectoryPath).ToList();
+
+        if (DirectoryFilesCounter < filesList.Count - 1)
+        {
+            DirectoryFilesCounter++;
+            ReadImageFromFile(filesList);
+        }
+    }
+
+    /// ReadImageFile
+    private void ReadImageFromFile(List<string> filesList)
+    {
+        var filePath = filesList.Skip(DirectoryFilesCounter).FirstOrDefault();
+        if (filePath != null)
+        {
+            try
+            {
+                ImageSource = File.ReadAllBytes(filePath).ToBitmapImage();
+            }
+            catch
+            {
+                ImageSource = null;
+            }
+        }
+        StswApp.StswWindow.Title = Path.GetFileName(filePath);
+    }
     #endregion
 
-    #region Properties
+    /// ConfigContext
+    public ConfigContext ConfigContext
+    {
+        get => _configContext;
+        set => SetProperty(ref _configContext, value);
+    }
+    private ConfigContext _configContext = new();
+
     /// DirectoryFilesCounter
-    private int directoryFilesCounter;
     public int DirectoryFilesCounter
     {
-        get => directoryFilesCounter;
-        set => SetProperty(ref directoryFilesCounter, value);
+        get => _directoryFilesCounter;
+        set => SetProperty(ref _directoryFilesCounter, value);
     }
+    private int _directoryFilesCounter;
 
     /// DirectoryPath
-    private string? directoryPath;
     public string? DirectoryPath
     {
-        get => directoryPath;
-        set => SetProperty(ref directoryPath, value);
+        get => _directoryPath;
+        set => SetProperty(ref _directoryPath, value);
     }
+    private string? _directoryPath;
 
     /// ImageSource
-    private ImageSource? imageSource;
     public ImageSource? ImageSource
     {
-        get => imageSource;
-        set => SetProperty(ref imageSource, value);
+        get => _imageSource;
+        set => SetProperty(ref _imageSource, value);
     }
-    #endregion
+    private ImageSource? _imageSource;
 }

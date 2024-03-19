@@ -6,6 +6,8 @@
                xmlns:se="clr-namespace:StswExpress;assembly=StswExpress"
                xmlns:local="clr-namespace:StswGallery"
                mc:Ignorable="d" Height="450" Width="750" WindowStartupLocation="CenterScreen" WindowState="Maximized"
-               Title="StswGallery">
-    <local:GalleryContext/>
+               Title="">
+    <se:StswContentDialog Identifier="Config">
+        <local:GalleryContext/>
+    </se:StswContentDialog>
 </se:StswWindow>

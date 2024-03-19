@@ -9,6 +9,6 @@ public partial class App : StswApp
 {
     private void Application_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
-        StswLog.Write(StswLogType.Error, e.Exception.ToString());
+        StswLog.Write(StswInfoType.Error, e.Exception.ToString());
     }
 }

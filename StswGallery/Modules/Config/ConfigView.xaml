@@ -1,0 +1,84 @@
+﻿<UserControl x:Class="StswGallery.ConfigView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:se="clr-namespace:StswExpress;assembly=StswExpress"
+             xmlns:local="clr-namespace:StswGallery"
+             xmlns:props="clr-namespace:StswGallery.Properties"
+             mc:Ignorable="d" d:DesignHeight="450" d:DesignWidth="750" d:Background="Black">
+    <d:UserControl.DataContext>
+        <local:ConfigContext/>
+    </d:UserControl.DataContext>
+
+    <se:StswGroupBox Padding="0">
+        <se:StswGroupBox.Header>
+            <se:StswHeader Content="Config" IconData="{x:Static se:StswIcons.Cog}" Margin="3" Padding="3"/>
+        </se:StswGroupBox.Header>
+
+        <DockPanel>
+            <!-- keys 0-9 settings -->
+            <Grid DockPanel.Dock="Top" Margin="5">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="auto"/>
+                    <ColumnDefinition Width="150"/>
+                    <ColumnDefinition Width="500"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
+                
+                <se:StswIcon Grid.Row="0" Grid.Column="0" Data="{x:Static se:StswIcons.Numeric1Box}" Margin="3"/>
+                <se:StswComboBox Grid.Row="0" Grid.Column="1" Margin="3" SelectedValue="{Binding Shortcut1Type, Source={x:Static props:Settings.Default}}" ItemsSource="{Binding ShortcutTypes, Mode=OneTime}" DisplayMemberPath="Display" SelectedValuePath="Value"/>
+                <se:StswTextBox Grid.Row="0" Grid.Column="2" Margin="3" Text="{Binding Shortcut1Value, Source={x:Static props:Settings.Default}}"/>
+                <se:StswIcon Grid.Row="1" Grid.Column="0" Data="{x:Static se:StswIcons.Numeric2Box}" Margin="3"/>
+                <se:StswComboBox Grid.Row="1" Grid.Column="1" Margin="3" SelectedValue="{Binding Shortcut2Type, Source={x:Static props:Settings.Default}}" ItemsSource="{Binding ShortcutTypes, Mode=OneTime}" DisplayMemberPath="Display" SelectedValuePath="Value"/>
+                <se:StswTextBox Grid.Row="1" Grid.Column="2" Margin="3" Text="{Binding Shortcut2Value, Source={x:Static props:Settings.Default}}"/>
+                <se:StswIcon Grid.Row="2" Grid.Column="0" Data="{x:Static se:StswIcons.Numeric3Box}" Margin="3"/>
+                <se:StswComboBox Grid.Row="2" Grid.Column="1" Margin="3" SelectedValue="{Binding Shortcut3Type, Source={x:Static props:Settings.Default}}" ItemsSource="{Binding ShortcutTypes, Mode=OneTime}" DisplayMemberPath="Display" SelectedValuePath="Value"/>
+                <se:StswTextBox Grid.Row="2" Grid.Column="2" Margin="3" Text="{Binding Shortcut3Value, Source={x:Static props:Settings.Default}}"/>
+                <se:StswIcon Grid.Row="3" Grid.Column="0" Data="{x:Static se:StswIcons.Numeric4Box}" Margin="3"/>
+                <se:StswComboBox Grid.Row="3" Grid.Column="1" Margin="3" SelectedValue="{Binding Shortcut4Type, Source={x:Static props:Settings.Default}}" ItemsSource="{Binding ShortcutTypes, Mode=OneTime}" DisplayMemberPath="Display" SelectedValuePath="Value"/>
+                <se:StswTextBox Grid.Row="3" Grid.Column="2" Margin="3" Text="{Binding Shortcut4Value, Source={x:Static props:Settings.Default}}"/>
+                <se:StswIcon Grid.Row="4" Grid.Column="0" Data="{x:Static se:StswIcons.Numeric5Box}" Margin="3"/>
+                <se:StswComboBox Grid.Row="4" Grid.Column="1" Margin="3" SelectedValue="{Binding Shortcut5Type, Source={x:Static props:Settings.Default}}" ItemsSource="{Binding ShortcutTypes, Mode=OneTime}" DisplayMemberPath="Display" SelectedValuePath="Value"/>
+                <se:StswTextBox Grid.Row="4" Grid.Column="2" Margin="3" Text="{Binding Shortcut5Value, Source={x:Static props:Settings.Default}}"/>
+                <se:StswIcon Grid.Row="5" Grid.Column="0" Data="{x:Static se:StswIcons.Numeric6Box}" Margin="3"/>
+                <se:StswComboBox Grid.Row="5" Grid.Column="1" Margin="3" SelectedValue="{Binding Shortcut6Type, Source={x:Static props:Settings.Default}}" ItemsSource="{Binding ShortcutTypes, Mode=OneTime}" DisplayMemberPath="Display" SelectedValuePath="Value"/>
+                <se:StswTextBox Grid.Row="5" Grid.Column="2" Margin="3" Text="{Binding Shortcut6Value, Source={x:Static props:Settings.Default}}"/>
+                <se:StswIcon Grid.Row="6" Grid.Column="0" Data="{x:Static se:StswIcons.Numeric7Box}" Margin="3"/>
+                <se:StswComboBox Grid.Row="6" Grid.Column="1" Margin="3" SelectedValue="{Binding Shortcut7Type, Source={x:Static props:Settings.Default}}" ItemsSource="{Binding ShortcutTypes, Mode=OneTime}" DisplayMemberPath="Display" SelectedValuePath="Value"/>
+                <se:StswTextBox Grid.Row="6" Grid.Column="2" Margin="3" Text="{Binding Shortcut7Value, Source={x:Static props:Settings.Default}}"/>
+                <se:StswIcon Grid.Row="7" Grid.Column="0" Data="{x:Static se:StswIcons.Numeric8Box}" Margin="3"/>
+                <se:StswComboBox Grid.Row="7" Grid.Column="1" Margin="3" SelectedValue="{Binding Shortcut8Type, Source={x:Static props:Settings.Default}}" ItemsSource="{Binding ShortcutTypes, Mode=OneTime}" DisplayMemberPath="Display" SelectedValuePath="Value"/>
+                <se:StswTextBox Grid.Row="7" Grid.Column="2" Margin="3" Text="{Binding Shortcut8Value, Source={x:Static props:Settings.Default}}"/>
+                <se:StswIcon Grid.Row="8" Grid.Column="0" Data="{x:Static se:StswIcons.Numeric9Box}" Margin="3"/>
+                <se:StswComboBox Grid.Row="8" Grid.Column="1" Margin="3" SelectedValue="{Binding Shortcut9Type, Source={x:Static props:Settings.Default}}" ItemsSource="{Binding ShortcutTypes, Mode=OneTime}" DisplayMemberPath="Display" SelectedValuePath="Value"/>
+                <se:StswTextBox Grid.Row="8" Grid.Column="2" Margin="3" Text="{Binding Shortcut9Value, Source={x:Static props:Settings.Default}}"/>
+                <se:StswIcon Grid.Row="9" Grid.Column="0" Data="{x:Static se:StswIcons.Numeric0Box}" Margin="3"/>
+                <se:StswComboBox Grid.Row="9" Grid.Column="1" Margin="3" SelectedValue="{Binding Shortcut0Type, Source={x:Static props:Settings.Default}}" ItemsSource="{Binding ShortcutTypes, Mode=OneTime}" DisplayMemberPath="Display" SelectedValuePath="Value"/>
+                <se:StswTextBox Grid.Row="9" Grid.Column="2" Margin="3" Text="{Binding Shortcut0Value, Source={x:Static props:Settings.Default}}"/>
+            </Grid>
+            
+            <!-- button panel -->
+            <se:StswSeparator DockPanel.Dock="Top"/>
+            <UniformGrid HorizontalAlignment="Center" Margin="5" Rows="1">
+                <se:StswButton Command="{Binding SaveCommand}" Margin="3" Padding="10 3">
+                    <se:StswHeader Content="Save" IconData="{x:Static se:StswIcons.ContentSave}" IconFill="{DynamicResource StswColor.Modify}"/>
+                </se:StswButton>
+                <se:StswButton Command="{Binding CancelCommand}" Margin="3" Padding="10 3">
+                    <se:StswHeader Content="Cancel" IconData="{x:Static se:StswIcons.Cancel}" IconFill="{DynamicResource StswColor.Negative}"/>
+                </se:StswButton>
+            </UniformGrid>
+        </DockPanel>
+    </se:StswGroupBox>
+</UserControl>

@@ -2,18 +2,25 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net6.0-windows</TargetFramework>
+    <TargetFramework>net8.0-windows7.0</TargetFramework>
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
-    <Version>0.2.0</Version>
-    <Company>Karol Staszewski</Company>
+    <Version>0.3.0</Version>
+    <Company>$(Author)</Company>
     <PackageProjectUrl>https://github.com/stsw133/StswGallery</PackageProjectUrl>
     <RepositoryUrl>https://github.com/stsw133/StswGallery</RepositoryUrl>
+    <ApplicationIcon>Resources\icon.ico</ApplicationIcon>
+    <Authors>Karol Staszewski</Authors>
+    <PackageIcon>icon.ico</PackageIcon>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.77" />
-    <PackageReference Include="StswExpress" Version="0.6.2" />
+    <Content Include="Resources\icon.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
+    <PackageReference Include="StswExpress" Version="0.11.0.1" />
   </ItemGroup>
 
   <ItemGroup>
@@ -32,10 +39,14 @@
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
+    <None Update="Resources\icon.ico">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Models\" />
+    <Resource Include="Resources\icon.ico" />
   </ItemGroup>
 
 </Project>

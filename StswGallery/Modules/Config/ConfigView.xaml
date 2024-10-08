@@ -6,14 +6,11 @@
              xmlns:se="clr-namespace:StswExpress;assembly=StswExpress"
              xmlns:local="clr-namespace:StswGallery"
              xmlns:props="clr-namespace:StswGallery.Properties"
-             mc:Ignorable="d" d:DesignHeight="450" d:DesignWidth="750" d:Background="Black">
-    <d:UserControl.DataContext>
-        <local:ConfigContext/>
-    </d:UserControl.DataContext>
+             mc:Ignorable="d" d:DataContext="{d:DesignInstance Type=local:ConfigContext}">
 
     <se:StswGroupBox Padding="0">
         <se:StswGroupBox.Header>
-            <se:StswHeader Content="Config" IconData="{x:Static se:StswIcons.Cog}" Margin="3" Padding="3"/>
+            <se:StswLabel Content="Config" IconData="{x:Static se:StswIcons.Cog}" Margin="3"/>
         </se:StswGroupBox.Header>
 
         <DockPanel>
@@ -73,10 +70,10 @@
             <se:StswSeparator DockPanel.Dock="Top"/>
             <UniformGrid HorizontalAlignment="Center" Margin="5" Rows="1">
                 <se:StswButton Command="{Binding SaveCommand}" Margin="3" Padding="10 3">
-                    <se:StswHeader Content="Save" IconData="{x:Static se:StswIcons.ContentSave}" IconFill="{DynamicResource StswColor.Modify}"/>
+                    <se:StswLabel Content="Save" IconData="{x:Static se:StswIcons.ContentSave}" IconFill="{DynamicResource StswColor.Modify}"/>
                 </se:StswButton>
                 <se:StswButton Command="{Binding CancelCommand}" Margin="3" Padding="10 3">
-                    <se:StswHeader Content="Cancel" IconData="{x:Static se:StswIcons.Cancel}" IconFill="{DynamicResource StswColor.Negative}"/>
+                    <se:StswLabel Content="Cancel" IconData="{x:Static se:StswIcons.Cancel}" IconFill="{DynamicResource StswColor.Negative}"/>
                 </se:StswButton>
             </UniformGrid>
         </DockPanel>

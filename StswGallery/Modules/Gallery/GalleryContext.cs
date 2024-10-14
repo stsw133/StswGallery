@@ -3,31 +3,30 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Windows.Input;
 using System.Windows.Media;
 
 namespace StswGallery;
 internal class GalleryContext : StswObservableObject
 {
-    public ICommand SelectDirectoryCommand { get; set; }
-    public ICommand RefreshCommand { get; set; }
-    public ICommand ConfigCommand { get; set; }
-    public ICommand RemoveFileCommand { get; set; }
-    public ICommand KeyNumberCommand { get; set; }
-    public ICommand RandomFileCommand { get; set; }
-    public ICommand PreviousFileCommand { get; set; }
-    public ICommand NextFileCommand { get; set; }
+    public StswAsyncCommand SelectDirectoryCommand { get; }
+    public StswAsyncCommand RefreshCommand { get; }
+    public StswCommand ConfigCommand { get; }
+    public StswCommand RemoveFileCommand { get; }
+    public StswCommand<object?> KeyNumberCommand { get; }
+    public StswCommand RandomFileCommand { get; }
+    public StswCommand PreviousFileCommand { get; }
+    public StswCommand NextFileCommand { get; }
 
     public GalleryContext()
     {
-        SelectDirectoryCommand = new StswCommand(SelectDirectory);
-        RefreshCommand = new StswCommand(Refresh);
-        ConfigCommand = new StswCommand(Config);
-        RemoveFileCommand = new StswCommand(RemoveFile);
-        KeyNumberCommand = new StswCommand<object?>(KeyNumber);
-        RandomFileCommand = new StswCommand(RandomFile);
-        PreviousFileCommand = new StswCommand(PreviousFile);
-        NextFileCommand = new StswCommand(NextFile);
+        SelectDirectoryCommand = new(SelectDirectory);
+        RefreshCommand = new(Refresh);
+        ConfigCommand = new(Config);
+        RemoveFileCommand = new(RemoveFile);
+        KeyNumberCommand = new(KeyNumber);
+        RandomFileCommand = new(RandomFile);
+        PreviousFileCommand = new(PreviousFile);
+        NextFileCommand = new(NextFile);
 
         Task.Run(RewatchList);
     }
@@ -38,27 +37,40 @@ internal class GalleryContext : StswObservableObject
     {
         while (true)
         {
-            await Task.Run(Refresh);
-            await Task.Delay(new TimeSpan(0, 0, 5));
+            await Refresh();
+            await Task.Delay(new TimeSpan(0, 0, 15));
         }
     }
 
     /// Command: select directory
-    private void SelectDirectory()
+    private async Task SelectDirectory()
     {
         var dialog = new System.Windows.Forms.FolderBrowserDialog();
         if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
         {
             DirectoryPath = dialog.SelectedPath;
+            await Refresh();
+            CurrentFileIndex = 0;
+            UpdateCurrentFilePath();
             ReadImageFromFile();
         }
     }
 
     /// Command: refresh
-    private void Refresh()
+    private async Task Refresh()
     {
         if (Directory.Exists(DirectoryPath))
-            DirectoryFiles = [.. Directory.EnumerateFiles(DirectoryPath).OrderBy(x => x, new StswNaturalStringComparer())];
+        {
+            var files = new List<string>();
+            await Task.Run(() => files = [.. Directory.EnumerateFiles(DirectoryPath).OrderBy(x => x, new StswNaturalStringComparer())]);
+            DirectoryFiles = files;
+
+            if (!string.IsNullOrEmpty(CurrentFilePath) && files.IndexOf(CurrentFilePath) is int index && index >= 0)
+            {
+                CurrentFileIndex = index;
+                UpdateCurrentFilePath();
+            }
+        }
     }
 
     /// Command: config
@@ -178,11 +190,7 @@ internal class GalleryContext : StswObservableObject
     public int CurrentFileIndex
     {
         get => _currentFileIndex;
-        set
-        {
-            SetProperty(ref _currentFileIndex, Math.Clamp(value, 0, DirectoryFiles.Count - 1));
-            CurrentFilePath = DirectoryFiles[_currentFileIndex];
-        }
+        set => SetProperty(ref _currentFileIndex, value);
     }
     private int _currentFileIndex = -1;
 
@@ -206,7 +214,7 @@ internal class GalleryContext : StswObservableObject
     public string? DirectoryPath
     {
         get => _directoryPath;
-        set => SetProperty(ref _directoryPath, value, () => { Refresh(); CurrentFileIndex = 0; });
+        set => SetProperty(ref _directoryPath, value);
     }
     private string? _directoryPath;
 

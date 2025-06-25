@@ -9,13 +9,6 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="/StswExpress;component/StswResources.xaml"/>
             </ResourceDictionary.MergedDictionaries>
-
-            <DataTemplate DataType="{x:Type local:ConfigContext}">
-                <local:ConfigView/>
-            </DataTemplate>
-            <DataTemplate DataType="{x:Type local:GalleryContext}">
-                <local:GalleryView/>
-            </DataTemplate>
         </ResourceDictionary>
     </se:StswApp.Resources>
 </se:StswApp>

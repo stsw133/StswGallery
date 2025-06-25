@@ -3,27 +3,30 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Windows.Input;
 using System.Windows.Media;
 
 namespace StswGallery;
-internal class GalleryContext : StswObservableObject
+internal class MainContext : StswObservableObject
 {
     public StswAsyncCommand SelectDirectoryCommand { get; }
     public StswAsyncCommand RefreshCommand { get; }
     public StswCommand ConfigCommand { get; }
     public StswCommand RemoveFileCommand { get; }
-    public StswCommand<object?> KeyNumberCommand { get; }
+    public StswCommand<int?> KeyNumberCommand { get; }
+    public StswCommand<KeyEventArgs?> KeyPressCommand { get; }
     public StswCommand RandomFileCommand { get; }
     public StswCommand PreviousFileCommand { get; }
     public StswCommand NextFileCommand { get; }
 
-    public GalleryContext()
+    public MainContext()
     {
         SelectDirectoryCommand = new(SelectDirectory);
         RefreshCommand = new(Refresh);
         ConfigCommand = new(Config);
         RemoveFileCommand = new(RemoveFile);
         KeyNumberCommand = new(KeyNumber);
+        KeyPressCommand = new(KeyPress);
         RandomFileCommand = new(RandomFile);
         PreviousFileCommand = new(PreviousFile);
         NextFileCommand = new(NextFile);
@@ -31,7 +34,8 @@ internal class GalleryContext : StswObservableObject
         Task.Run(RewatchList);
     }
 
-    #region Events & methods
+
+
     /// Command: rewatch list
     private async Task RewatchList()
     {
@@ -92,19 +96,22 @@ internal class GalleryContext : StswObservableObject
         }
     }
 
-    /// Command: key `number`
-    private void KeyNumber(object? number)
+    /// Command: key number
+    private void KeyNumber(int? num)
     {
-        if (string.IsNullOrEmpty(DirectoryPath) || IsConfigOpen)
+        if (num == null || !num.Between(0, 9))
+            return;
+
+        var shortcutValue = Properties.Settings.Default[$"Shortcut{num}Value"].ToString();
+        if (string.IsNullOrEmpty(shortcutValue))
             return;
 
         /// action: MoveTo
-        if ((ShortcutType)Properties.Settings.Default[$"Shortcut{number}Type"] == ShortcutType.MoveTo)
+        if ((ShortcutType)Properties.Settings.Default[$"Shortcut{num}Type"] == ShortcutType.MoveTo)
         {
-            var newDir = Properties.Settings.Default[$"Shortcut{number}Value"].ToString();
-            if (!string.IsNullOrEmpty(newDir) && Directory.Exists(newDir) && CurrentFilePath != null)
+            if (Directory.Exists(shortcutValue) && CurrentFilePath != null)
             {
-                var newPath = Path.Combine(newDir, Path.GetFileName(CurrentFilePath));
+                var newPath = Path.Combine(shortcutValue, Path.GetFileName(CurrentFilePath));
                 if (CurrentFilePath != newPath && !File.Exists(newPath))
                 {
                     File.Move(CurrentFilePath, newPath);
@@ -115,6 +122,26 @@ internal class GalleryContext : StswObservableObject
                 }
             }
         }
+    }
+
+    /// Command: key press
+    private void KeyPress(KeyEventArgs? e)
+    {
+        if (e == null || string.IsNullOrEmpty(DirectoryPath) || IsConfigOpen)
+            return;
+
+        Action? action = e.Key switch
+        {
+            Key.Left => PreviousFile,
+            Key.Right => NextFile,
+            Key.Z => RandomFile,
+            Key.F5 => () => Task.Run(Refresh),
+            Key.F9 => () => Task.Run(SelectDirectory),
+            Key.Delete => RemoveFile,
+            >= Key.D0 and <= Key.D9 => () => KeyNumber(e.Key - Key.D0),
+            _ => null
+        };
+        action?.Invoke();
     }
 
     /// Command: random file
@@ -150,7 +177,7 @@ internal class GalleryContext : StswObservableObject
 
             try
             {
-                ImageSource = StswFn.BytesToBitmapImage(File.ReadAllBytes(CurrentFilePath));
+                ImageSource = StswFnUI.BytesToBitmapImage(File.ReadAllBytes(CurrentFilePath));
             }
             catch
             {
@@ -176,7 +203,8 @@ internal class GalleryContext : StswObservableObject
         CurrentFileIndex = Math.Clamp(CurrentFileIndex, 0, DirectoryFiles.Count - 1);
         CurrentFilePath = DirectoryFiles.ElementAtOrDefault(CurrentFileIndex);
     }
-    #endregion
+
+
 
     /// ConfigContext
     public ConfigContext ConfigContext

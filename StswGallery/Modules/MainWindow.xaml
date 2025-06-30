@@ -16,7 +16,7 @@
         <Grid>
             <!-- image -->
             <se:StswZoomControl>
-                <Image Source="{Binding ImageSource}"/>
+                <Image Source="{Binding ImageSource}" RenderOptions.BitmapScalingMode="Fant"/>
             </se:StswZoomControl>
             <!-- default button -->
             <se:StswSubButton d:Foreground="White"

@@ -2,52 +2,54 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 
 namespace StswGallery;
-internal class MainContext : StswObservableObject
+public partial class MainContext : StswObservableObject
 {
-    public StswAsyncCommand SelectDirectoryCommand { get; }
-    public StswAsyncCommand RefreshCommand { get; }
-    public StswCommand ConfigCommand { get; }
-    public StswCommand RemoveFileCommand { get; }
-    public StswCommand<int?> KeyNumberCommand { get; }
-    public StswCommand<KeyEventArgs?> KeyPressCommand { get; }
-    public StswCommand RandomFileCommand { get; }
-    public StswCommand PreviousFileCommand { get; }
-    public StswCommand NextFileCommand { get; }
+    private readonly CancellationTokenSource _rewatchCancellationTokenSource = new();
 
-    public MainContext()
+    /// Init
+    [StswCommand]
+    void Init()
     {
-        SelectDirectoryCommand = new(SelectDirectory);
-        RefreshCommand = new(Refresh);
-        ConfigCommand = new(Config);
-        RemoveFileCommand = new(RemoveFile);
-        KeyNumberCommand = new(KeyNumber);
-        KeyPressCommand = new(KeyPress);
-        RandomFileCommand = new(RandomFile);
-        PreviousFileCommand = new(PreviousFile);
-        NextFileCommand = new(NextFile);
-
-        Task.Run(RewatchList);
+        App.Current.Exit += OnApplicationExit;
+        _ = RepeatRefresh(_rewatchCancellationTokenSource.Token);
     }
 
-
-
-    /// Command: rewatch list
-    private async Task RewatchList()
+    /// RepeatRefresh
+    async Task RepeatRefresh(CancellationToken cancellationToken)
     {
-        while (true)
+        while (!cancellationToken.IsCancellationRequested)
         {
             await Refresh();
-            await Task.Delay(new TimeSpan(0, 0, 15));
+            try
+            {
+                await Task.Delay(TimeSpan.FromSeconds(15), cancellationToken);
+            }
+            catch (TaskCanceledException)
+            {
+                break;
+            }
         }
     }
 
-    /// Command: select directory
-    private async Task SelectDirectory()
+    /// OnApplicationExit
+    void OnApplicationExit(object? sender, ExitEventArgs e)
+    {
+        Application.Current.Exit -= OnApplicationExit;
+        if (!_rewatchCancellationTokenSource.IsCancellationRequested)
+            _rewatchCancellationTokenSource.Cancel();
+        _rewatchCancellationTokenSource.Dispose();
+    }
+
+    /// SelectDirectory
+    [StswCommand]
+    async Task SelectDirectory()
     {
         var dialog = new System.Windows.Forms.FolderBrowserDialog();
         if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
@@ -60,8 +62,9 @@ internal class MainContext : StswObservableObject
         }
     }
 
-    /// Command: refresh
-    private async Task Refresh()
+    /// Refresh
+    [StswCommand]
+    async Task Refresh()
     {
         if (Directory.Exists(DirectoryPath))
         {
@@ -77,14 +80,16 @@ internal class MainContext : StswObservableObject
         }
     }
 
-    /// Command: config
-    private void Config()
+    /// Config
+    [StswCommand]
+    void Config()
     {
         StswContentDialog.Show(ConfigContext, "Config");
     }
 
-    /// Command: remove file
-    private void RemoveFile()
+    /// RemoveFile
+    [StswCommand]
+    void RemoveFile()
     {
         if (File.Exists(CurrentFilePath))
         {
@@ -96,13 +101,14 @@ internal class MainContext : StswObservableObject
         }
     }
 
-    /// Command: key number
-    private void KeyNumber(int? num)
+    /// KeyNumber
+    [StswCommand]
+    void KeyNumber(int? num)
     {
         if (num == null || !num.Between(0, 9))
             return;
 
-        var shortcutValue = Properties.Settings.Default[$"Shortcut{num}Value"].ToString();
+        var shortcutValue = Properties.Settings.Default[$"Shortcut{num}Value"] as string;
         if (string.IsNullOrEmpty(shortcutValue))
             return;
 
@@ -124,44 +130,54 @@ internal class MainContext : StswObservableObject
         }
     }
 
-    /// Command: key press
-    private void KeyPress(KeyEventArgs? e)
+    /// KeyPress
+    [StswCommand]
+    async Task KeyPress(KeyEventArgs? e)
     {
         if (e == null || string.IsNullOrEmpty(DirectoryPath) || IsConfigOpen)
             return;
 
-        Action? action = e.Key switch
+        Func<Task>? action = e.Key switch
         {
-            Key.Left => PreviousFile,
-            Key.Right => NextFile,
-            Key.Z => RandomFile,
-            Key.F5 => () => Task.Run(Refresh),
-            Key.F9 => () => Task.Run(SelectDirectory),
-            Key.Delete => RemoveFile,
-            >= Key.D0 and <= Key.D9 => () => KeyNumber(e.Key - Key.D0),
+            Key.Left => () => { PreviousFile(); return Task.CompletedTask; },
+            Key.Right => () => { NextFile(); return Task.CompletedTask; },
+            Key.Z => () => { RandomFile(); return Task.CompletedTask; },
+            Key.F5 => Refresh,
+            Key.F9 => SelectDirectory,
+            Key.Delete => () => { RemoveFile(); return Task.CompletedTask; },
+            >= Key.D0 and <= Key.D9 => () => { KeyNumber(e.Key - Key.D0); return Task.CompletedTask; },
             _ => null
         };
-        action?.Invoke();
+        if (action == null)
+            return;
+        
+        await action();
     }
 
-    /// Command: random file
-    private void RandomFile()
+    /// RandomFile
+    [StswCommand]
+    void RandomFile()
     {
-        CurrentFileIndex = new Random().Next(DirectoryFiles.Count - 1);
+        if (DirectoryFiles.Count == 0)
+            return;
+
+        CurrentFileIndex = _random.Next(DirectoryFiles.Count);
         UpdateCurrentFilePath();
         ReadImageFromFile();
     }
 
-    /// Command: previous file
-    private void PreviousFile()
+    /// PreviousFile
+    [StswCommand]
+    void PreviousFile()
     {
         CurrentFileIndex--;
         UpdateCurrentFilePath();
         ReadImageFromFile();
     }
 
-    /// Command: next file
-    private void NextFile()
+    /// NextFile
+    [StswCommand]
+    void NextFile()
     {
         CurrentFileIndex++;
         UpdateCurrentFilePath();
@@ -206,59 +222,12 @@ internal class MainContext : StswObservableObject
 
 
 
-    /// ConfigContext
-    public ConfigContext ConfigContext
-    {
-        get => _configContext;
-        set => SetProperty(ref _configContext, value);
-    }
-    private ConfigContext _configContext = new();
-
-    /// CurrentFileIndex
-    public int CurrentFileIndex
-    {
-        get => _currentFileIndex;
-        set => SetProperty(ref _currentFileIndex, value);
-    }
-    private int _currentFileIndex = -1;
-
-    /// CurrentFilePath
-    public string? CurrentFilePath
-    {
-        get => _currentFilePath;
-        set => SetProperty(ref _currentFilePath, value);
-    }
-    private string? _currentFilePath;
-
-    /// DirectoryFiles
-    public List<string> DirectoryFiles
-    {
-        get => _directoryFiles;
-        set => SetProperty(ref _directoryFiles, value);
-    }
-    private List<string> _directoryFiles = [];
-
-    /// DirectoryPath
-    public string? DirectoryPath
-    {
-        get => _directoryPath;
-        set => SetProperty(ref _directoryPath, value);
-    }
-    private string? _directoryPath;
-
-    /// ImageSource
-    public ImageSource? ImageSource
-    {
-        get => _imageSource;
-        set => SetProperty(ref _imageSource, value);
-    }
-    private ImageSource? _imageSource;
-
-    /// IsConfigOpen
-    public bool IsConfigOpen
-    {
-        get => _isConfigOpen;
-        set => SetProperty(ref _isConfigOpen, value);
-    }
-    private bool _isConfigOpen;
+    private static readonly Random _random = new();
+    [StswObservableProperty] ConfigContext _configContext = new();
+    [StswObservableProperty] int _currentFileIndex = -1;
+    [StswObservableProperty] string? _currentFilePath;
+    [StswObservableProperty] List<string> _directoryFiles = [];
+    [StswObservableProperty] string? _directoryPath;
+    [StswObservableProperty] ImageSource? _imageSource;
+    [StswObservableProperty] bool _isConfigOpen;
 }

@@ -1,31 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
-using System.Windows.Input;
 
 namespace StswGallery;
-internal class ConfigContext : StswObservableObject
+public partial class ConfigContext : StswObservableObject
 {
-    public ICommand SaveCommand { get; set; }
-    public ICommand CancelCommand { get; set; }
-
-    public ConfigContext()
-    {
-        SaveCommand = new StswCommand(Save);
-        CancelCommand = new StswCommand(Cancel);
-    }
-
-    #region Events & methods
-    /// Command: save
-    private void Save()
+    /// Save
+    [StswCommand]
+    void Save()
     {
         Properties.Settings.Default.Save();
         StswContentDialog.Close("Config");
     }
 
-    /// Command: cancel
-    private void Cancel()
+    /// Cancel
+    [StswCommand]
+    void Cancel()
     {
         Properties.Settings.Default.Reload();
         StswContentDialog.Close("Config");
@@ -57,13 +49,20 @@ internal class ConfigContext : StswObservableObject
 
         return enumList;
     }
-    #endregion
 
-    /// ShortcutTypes
-    public List<StswComboItem> ShortcutTypes
-    {
-        get => _shortcutTypes;
-        set => SetProperty(ref _shortcutTypes, value);
-    }
-    private List<StswComboItem> _shortcutTypes = GetEnumValuesWithDescription<ShortcutType>();
+
+
+    [StswObservableProperty] List<StswComboItem> _shortcutTypes = GetEnumValuesWithDescription<ShortcutType>();
+    [StswObservableProperty] ObservableCollection<ShortcutConfigModel> _shortcuts = [
+            new(1, StswIcons.Numeric1Box, StswIcons.Numeric1),
+            new(2, StswIcons.Numeric2Box, StswIcons.Numeric2),
+            new(3, StswIcons.Numeric3Box, StswIcons.Numeric3),
+            new(4, StswIcons.Numeric4Box, StswIcons.Numeric4),
+            new(5, StswIcons.Numeric5Box, StswIcons.Numeric5),
+            new(6, StswIcons.Numeric6Box, StswIcons.Numeric6),
+            new(7, StswIcons.Numeric7Box, StswIcons.Numeric7),
+            new(8, StswIcons.Numeric8Box, StswIcons.Numeric8),
+            new(9, StswIcons.Numeric9Box, StswIcons.Numeric9),
+            new(0, StswIcons.Numeric0Box, StswIcons.Numeric0)
+        ];
 }

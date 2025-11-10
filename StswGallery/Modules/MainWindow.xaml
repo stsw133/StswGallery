@@ -5,12 +5,17 @@
                xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                xmlns:se="clr-namespace:StswExpress;assembly=StswExpress"
                xmlns:local="clr-namespace:StswGallery"
-               mc:Ignorable="d" Height="450" Width="750" WindowStartupLocation="CenterScreen" WindowState="Maximized"
+               mc:Ignorable="d" d:DataContext="{d:DesignInstance local:MainContext}"
+               Height="450" Width="750" WindowStartupLocation="CenterScreen" WindowState="Maximized"
                Title=""
-               PreviewKeyDown="{se:StswEventToCommand CommandBinding={Binding KeyPressCommand}, PassEventArgsAsParameter=True}">
+               Loaded="{se:StswEventToCommand InitCommand}"
+               PreviewKeyDown="{se:StswEventToCommand KeyPressCommand, PassEventArgs=True}">
     <se:StswWindow.DataContext>
         <local:MainContext/>
     </se:StswWindow.DataContext>
+    <se:StswWindow.Resources>
+        <se:StswBindingProxy x:Key="proxy" Proxy="{Binding}"/>
+    </se:StswWindow.Resources>
 
     <se:StswContentDialog Identifier="Config" IsOpen="{Binding IsConfigOpen}" IsTabStop="False">
         <Grid>
@@ -24,7 +29,8 @@
                               Content="Click to select a directory..."
                               Focusable="False"
                               IsTabStop="False"
-                              HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                              HorizontalAlignment="Stretch"
+                              VerticalAlignment="Stretch"
                               Visibility="{Binding DirectoryPath, Converter={x:Static se:StswExistenceConverter.Instance}, ConverterParameter=null}"/>
             <!-- option panel -->
             <se:StswSidePanel MinHeight="50"
@@ -54,16 +60,15 @@
                                 <se:StswIcon Data="{x:Static se:StswIcons.Cog}"/>
                             </se:StswButton>
 
-                            <se:StswDropButton se:StswControl.IsBorderless="True" Focusable="False" Visibility="Collapsed"
-                                               se:StswPopup.Background="Transparent" se:StswPopup.BorderThickness="0">
+                            <se:StswDropButton Focusable="False"
+                                               Visibility="Collapsed"
+                                               se:StswControl.IsBorderless="True"
+                                               se:StswDropArrow.Visibility="Collapsed"
+                                               se:StswPopup.Background="Transparent"
+                                               se:StswPopup.BorderThickness="0">
                                 <se:StswDropButton.Header>
                                     <se:StswIcon Data="{x:Static se:StswIcons.Star}"/>
                                 </se:StswDropButton.Header>
-                                <se:StswDropButton.Resources>
-                                    <Style TargetType="{x:Type se:StswDropArrow}">
-                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                    </Style>
-                                </se:StswDropButton.Resources>
                                 <se:StswRatingControl ItemsNumber="5"/>
                             </se:StswDropButton>
 
@@ -80,38 +85,24 @@
                                 </se:StswButton>
                             </StackPanel>
 
-                            <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
-                                <se:StswButton se:StswControl.IsBorderless="True" Command="{Binding KeyNumberCommand}" CommandParameter="1" Focusable="False">
-                                    <se:StswIcon Data="{x:Static se:StswIcons.Numeric1}"/>
-                                </se:StswButton>
-                                <se:StswButton se:StswControl.IsBorderless="True" Command="{Binding KeyNumberCommand}" CommandParameter="2" Focusable="False">
-                                    <se:StswIcon Data="{x:Static se:StswIcons.Numeric2}"/>
-                                </se:StswButton>
-                                <se:StswButton se:StswControl.IsBorderless="True" Command="{Binding KeyNumberCommand}" CommandParameter="3" Focusable="False">
-                                    <se:StswIcon Data="{x:Static se:StswIcons.Numeric3}"/>
-                                </se:StswButton>
-                                <se:StswButton se:StswControl.IsBorderless="True" Command="{Binding KeyNumberCommand}" CommandParameter="4" Focusable="False">
-                                    <se:StswIcon Data="{x:Static se:StswIcons.Numeric4}"/>
-                                </se:StswButton>
-                                <se:StswButton se:StswControl.IsBorderless="True" Command="{Binding KeyNumberCommand}" CommandParameter="5" Focusable="False">
-                                    <se:StswIcon Data="{x:Static se:StswIcons.Numeric5}"/>
-                                </se:StswButton>
-                                <se:StswButton se:StswControl.IsBorderless="True" Command="{Binding KeyNumberCommand}" CommandParameter="6" Focusable="False">
-                                    <se:StswIcon Data="{x:Static se:StswIcons.Numeric6}"/>
-                                </se:StswButton>
-                                <se:StswButton se:StswControl.IsBorderless="True" Command="{Binding KeyNumberCommand}" CommandParameter="7" Focusable="False">
-                                    <se:StswIcon Data="{x:Static se:StswIcons.Numeric7}"/>
-                                </se:StswButton>
-                                <se:StswButton se:StswControl.IsBorderless="True" Command="{Binding KeyNumberCommand}" CommandParameter="8" Focusable="False">
-                                    <se:StswIcon Data="{x:Static se:StswIcons.Numeric8}"/>
-                                </se:StswButton>
-                                <se:StswButton se:StswControl.IsBorderless="True" Command="{Binding KeyNumberCommand}" CommandParameter="9" Focusable="False">
-                                    <se:StswIcon Data="{x:Static se:StswIcons.Numeric9}"/>
-                                </se:StswButton>
-                                <se:StswButton se:StswControl.IsBorderless="True" Command="{Binding KeyNumberCommand}" CommandParameter="0" Focusable="False">
-                                    <se:StswIcon Data="{x:Static se:StswIcons.Numeric0}"/>
-                                </se:StswButton>
-                            </StackPanel>
+                            <ItemsControl HorizontalAlignment="Center" ItemsSource="{Binding ConfigContext.Shortcuts}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal"/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <se:StswButton se:StswControl.IsBorderless="True"
+                                                       Command="{Binding Proxy.KeyNumberCommand, Source={StaticResource proxy}}"
+                                                       CommandParameter="{Binding Number}"
+                                                       Focusable="False"
+                                                       Margin="0">
+                                            <se:StswIcon Data="{Binding ButtonIcon}"/>
+                                        </se:StswButton>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                         </DockPanel>
                     </DockPanel>
                 </se:StswBorder>

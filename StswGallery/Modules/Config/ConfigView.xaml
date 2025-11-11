@@ -5,7 +5,6 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:se="clr-namespace:StswExpress;assembly=StswExpress"
              xmlns:local="clr-namespace:StswGallery"
-             xmlns:props="clr-namespace:StswGallery.Properties"
              mc:Ignorable="d" d:DataContext="{d:DesignInstance local:ConfigContext}">
 
     <se:StswGroupBox Padding="0">

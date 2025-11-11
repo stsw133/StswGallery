@@ -34,12 +34,11 @@
                               Visibility="{Binding DirectoryPath, Converter={x:Static se:StswExistenceConverter.Instance}, ConverterParameter=null}"/>
             <!-- option panel -->
             <se:StswSidePanel MinHeight="50"
-                              MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType={x:Type Grid}}, Converter={x:Static se:StswCalculateConverter.Instance}, ConverterParameter=*0.99}"
+                              MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType={x:Type Grid}}, Converter={x:Static se:StswCalculateConverter.Instance}, ConverterParameter=-20}"
                               HorizontalAlignment="Center"
                               VerticalAlignment="Bottom"
                               HorizontalContentAlignment="Center">
-                <se:StswBorder BorderBrush="{DynamicResource StswBorder.Static.Border}"
-                               BorderThickness="2 2 2 0">
+                <se:StswBorder BorderBrush="{DynamicResource StswBorder.Static.Border}" BorderThickness="2 2 2 0">
                     <DockPanel Background="{DynamicResource StswBox.Static.Background}">
                         <!-- top side -->
                         <DockPanel DockPanel.Dock="Top">
@@ -75,6 +74,25 @@
                             <se:StswButton se:StswControl.IsBorderless="True" Command="{Binding RemoveFileCommand}" Focusable="False" Visibility="Collapsed">
                                 <se:StswIcon Data="{x:Static se:StswIcons.TrashCan}"/>
                             </se:StswButton>
+
+                            <se:StswDropButton se:StswControl.IsBorderless="True" Focusable="False" se:StswDropArrow.Visibility="Collapsed">
+                                <se:StswDropButton.Header>
+                                    <se:StswIcon Data="{x:Static se:StswIcons.Pencil}"/>
+                                </se:StswDropButton.Header>
+
+                                <se:StswButton se:StswControl.IsBorderless="True" Command="{Binding RotateLeftCommand}" Focusable="False">
+                                    <se:StswIcon Data="{x:Static se:StswIcons.RotateLeft}"/>
+                                </se:StswButton>
+                                <se:StswButton se:StswControl.IsBorderless="True" Command="{Binding RotateRightCommand}" Focusable="False">
+                                    <se:StswIcon Data="{x:Static se:StswIcons.RotateRight}"/>
+                                </se:StswButton>
+
+                                <se:StswDropButton.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal"/>
+                                    </ItemsPanelTemplate>
+                                </se:StswDropButton.ItemsPanel>
+                            </se:StswDropButton>
 
                             <StackPanel DockPanel.Dock="Right" HorizontalAlignment="Right" Orientation="Horizontal">
                                 <se:StswButton se:StswControl.IsBorderless="True" Command="{Binding PreviousFileCommand}" Focusable="False">

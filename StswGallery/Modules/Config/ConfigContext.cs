@@ -11,7 +11,7 @@ public partial class ConfigContext : StswObservableObject
     [StswCommand]
     void Save()
     {
-        Properties.Settings.Default.Save();
+        AppSettingsService.Save();
         StswContentDialog.Close("Config");
     }
 
@@ -19,7 +19,7 @@ public partial class ConfigContext : StswObservableObject
     [StswCommand]
     void Cancel()
     {
-        Properties.Settings.Default.Reload();
+        AppSettingsService.Reload();
         StswContentDialog.Close("Config");
     }
 

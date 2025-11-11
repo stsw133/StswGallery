@@ -12,6 +12,7 @@
     <ApplicationIcon>Resources\icon.ico</ApplicationIcon>
     <Authors>Karol Staszewski</Authors>
     <PackageIcon>icon.ico</PackageIcon>
+	<InterceptorsNamespaces>$(InterceptorsNamespaces);Microsoft.Extensions.Configuration.Binder.SourceGeneration</InterceptorsNamespaces>
   </PropertyGroup>
 
   <ItemGroup>

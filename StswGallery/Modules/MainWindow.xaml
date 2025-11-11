@@ -17,7 +17,7 @@
         <se:StswBindingProxy x:Key="proxy" Proxy="{Binding}"/>
     </se:StswWindow.Resources>
 
-    <se:StswContentDialog Identifier="Config" IsOpen="{Binding IsConfigOpen}" IsTabStop="False">
+    <se:StswContentDialog CloseOnBackdropClick="True" Identifier="ConfigContentDialog" IsOpen="{Binding IsConfigOpen}" IsTabStop="False">
         <Grid>
             <!-- image -->
             <se:StswZoomControl>

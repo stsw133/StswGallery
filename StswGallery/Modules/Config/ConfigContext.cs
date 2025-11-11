@@ -13,7 +13,7 @@ public partial class ConfigContext : BaseContext
     void Save()
     {
         AppSettingsService.Save();
-        StswContentDialog.Close("Config");
+        StswContentDialog.Close("ConfigContentDialog");
     }
 
     /// Cancel
@@ -21,7 +21,7 @@ public partial class ConfigContext : BaseContext
     void Cancel()
     {
         AppSettingsService.Reload();
-        StswContentDialog.Close("Config");
+        StswContentDialog.Close("ConfigContentDialog");
     }
 
     /// GetEnumValuesWithDescription

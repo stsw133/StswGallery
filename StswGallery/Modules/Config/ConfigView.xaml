@@ -14,67 +14,76 @@
             <se:StswLabel Content="Config" IconData="{x:Static se:StswIcons.Cog}" Margin="3"/>
         </se:StswGroupBox.Header>
 
-        <se:StswScrollView>
-            <DockPanel>
-                <!-- keys 0-9 settings -->
-                <ItemsControl DockPanel.Dock="Top" Margin="5" ItemsSource="{Binding Shortcuts}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Grid Margin="0 3" se:StswGrid.ColumnDefinitions="25,150,500">
-                                <se:StswIcon Grid.Column="0"
-                                             Data="{Binding ConfigIcon}"
-                                             Margin="3"/>
-                                <se:StswComboBox Grid.Column="1"
-                                                 DisplayMemberPath="Display"
-                                                 ItemsSource="{Binding DataContext.ShortcutTypes, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}, Mode=OneTime}"
-                                                 Margin="3"
-                                                 SelectedValue="{Binding Type, Mode=TwoWay}"
-                                                 SelectedValuePath="Value"/>
-                                <se:StswTextBox Grid.Column="2"
-                                                Margin="3"
-                                                Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                            </Grid>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
+        <DockPanel>
+            <!-- button panel -->
+            <UniformGrid DockPanel.Dock="Bottom" HorizontalAlignment="Center" Margin="5" Rows="1">
+                <se:StswButton Command="{Binding SaveCommand}" Margin="3" Padding="10 3">
+                    <se:StswLabel Content="Save" IconData="{x:Static se:StswIcons.ContentSave}" IconFill="{DynamicResource StswColor.Modify}"/>
+                </se:StswButton>
+                <se:StswButton Command="{Binding CancelCommand}" Margin="3" Padding="10 3">
+                    <se:StswLabel Content="Cancel" IconData="{x:Static se:StswIcons.Cancel}" IconFill="{DynamicResource StswColor.Negative}"/>
+                </se:StswButton>
+            </UniformGrid>
+            <se:StswSeparator DockPanel.Dock="Bottom" BorderThickness="1"/>
 
-                <se:StswSeparator DockPanel.Dock="Top"/>
+            <se:StswScrollView>
+                <StackPanel>
+                    <!-- keys 0-9 settings -->
+                    <se:StswLabel DockPanel.Dock="Top"
+                                  Content="NUMBER SHORTCUTS"
+                                  FontSize="10"
+                                  FontWeight="Bold"
+                                  HorizontalAlignment="Center"
+                                  Margin="0 10 0 0"/>
+                    <ItemsControl DockPanel.Dock="Top" Margin="3" ItemsSource="{Binding Shortcuts}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="3" se:StswGrid.ColumnDefinitions="25,150,500">
+                                    <se:StswIcon Grid.Column="0"
+                                                 Data="{Binding ConfigIcon}"
+                                                 Margin="3"/>
+                                    <se:StswComboBox Grid.Column="1"
+                                                     DisplayMemberPath="Display"
+                                                     ItemsSource="{Binding DataContext.ShortcutTypes, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}, Mode=OneTime}"
+                                                     Margin="3"
+                                                     SelectedValue="{Binding Type, Mode=TwoWay}"
+                                                     SelectedValuePath="Value"/>
+                                    <se:StswTextBox Grid.Column="2"
+                                                    Margin="3"
+                                                    Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
 
-                <se:StswLabel DockPanel.Dock="Top"
-                              Margin="8 0 8 4"
-                              FontWeight="Bold"
-                              Content="Application shortcuts"/>
+                    <se:StswSeparator DockPanel.Dock="Top" BorderThickness="1"/>
 
-                <!-- action key settings -->
-                <ItemsControl DockPanel.Dock="Top" Margin="5" ItemsSource="{Binding ActionKeys}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Grid Margin="0 3" se:StswGrid.ColumnDefinitions="175,500">
-                                <se:StswLabel Grid.Column="0"
-                                              Content="{Binding DisplayName}"
-                                              Margin="3"
-                                              HorizontalContentAlignment="Right"
-                                              VerticalAlignment="Center"/>
-                                <se:StswComboBox Grid.Column="1"
-                                                 ItemsSource="{Binding DataContext.AvailableKeys, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}, Mode=OneTime}"
-                                                 Margin="3"
-                                                 SelectedItem="{Binding Key, Mode=TwoWay}"/>
-                            </Grid>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-
-                <!-- button panel -->
-                <se:StswSeparator DockPanel.Dock="Top"/>
-                <UniformGrid HorizontalAlignment="Center" Margin="5" Rows="1">
-                    <se:StswButton Command="{Binding SaveCommand}" Margin="3" Padding="10 3">
-                        <se:StswLabel Content="Save" IconData="{x:Static se:StswIcons.ContentSave}" IconFill="{DynamicResource StswColor.Modify}"/>
-                    </se:StswButton>
-                    <se:StswButton Command="{Binding CancelCommand}" Margin="3" Padding="10 3">
-                        <se:StswLabel Content="Cancel" IconData="{x:Static se:StswIcons.Cancel}" IconFill="{DynamicResource StswColor.Negative}"/>
-                    </se:StswButton>
-                </UniformGrid>
-            </DockPanel>
-        </se:StswScrollView>
+                    <!-- action key settings -->
+                    <se:StswLabel DockPanel.Dock="Top"
+                                  Content="APPLICATION SHORTCUTS"
+                                  FontSize="10"
+                                  FontWeight="Bold"
+                                  HorizontalAlignment="Center"
+                                  Margin="0 10 0 0"/>
+                    <ItemsControl DockPanel.Dock="Top" Margin="3" ItemsSource="{Binding ActionKeys}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="3" se:StswGrid.ColumnDefinitions="175,500">
+                                    <se:StswLabel Grid.Column="0"
+                                                  Content="{Binding DisplayName}"
+                                                  Margin="3"
+                                                  HorizontalContentAlignment="Right"
+                                                  VerticalAlignment="Center"/>
+                                    <se:StswComboBox Grid.Column="1"
+                                                     ItemsSource="{Binding DataContext.AvailableKeys, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}, Mode=OneTime}"
+                                                     Margin="3"
+                                                     SelectedItem="{Binding Key, Mode=TwoWay}"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </se:StswScrollView>
+        </DockPanel>
     </se:StswGroupBox>
 </UserControl>

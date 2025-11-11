@@ -131,7 +131,7 @@ public partial class MainContext : BaseContext
     [StswCommand]
     void Config()
     {
-        StswContentDialog.Show(ConfigContext, "Config");
+        StswContentDialog.Show(ConfigContext, "ConfigContentDialog");
     }
 
     /// RemoveFile

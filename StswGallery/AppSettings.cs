@@ -5,12 +5,20 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Windows.Input;
 
 namespace StswGallery;
 
 public class AppSettings
 {
+    public List<ActionKeySetting> ActionKeys { get; set; } = [];
     public List<ShortcutSetting> Shortcuts { get; set; } = [];
+}
+
+public class ActionKeySetting
+{
+    public ActionKeyType Action { get; set; }
+    public Key Key { get; set; }
 }
 
 public class ShortcutSetting
@@ -23,7 +31,6 @@ public class ShortcutSetting
 public static class AppSettingsService
 {
     private const string AppSettingsFileName = "appsettings.json";
-    private const string UserSettingsFileName = "appsettings.user.json";
 
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {
@@ -50,22 +57,36 @@ public static class AppSettingsService
     public static ShortcutSetting GetShortcut(int number)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(number);
-        EnsureShortcutDefaults(Current);
+        EnsureDefaults(Current);
         return Current.Shortcuts.First(s => s.Number == number);
+    }
+
+    /// GetActionKeySetting
+    public static ActionKeySetting GetActionKeySetting(ActionKeyType action)
+    {
+        EnsureDefaults(Current);
+        return Current.ActionKeys.First(a => a.Action == action);
+    }
+
+    /// GetActionKeySettings
+    public static IReadOnlyList<ActionKeySetting> GetActionKeySettings()
+    {
+        EnsureDefaults(Current);
+        return Current.ActionKeys;
     }
 
     /// Save
     public static void Save()
     {
-        EnsureShortcutDefaults(Current);
+        EnsureDefaults(Current);
 
         var basePath = AppContext.BaseDirectory;
-        var userFilePath = Path.Combine(basePath, UserSettingsFileName);
+        var appFilePath = Path.Combine(basePath, AppSettingsFileName);
 
-        Directory.CreateDirectory(Path.GetDirectoryName(userFilePath)!);
+        Directory.CreateDirectory(Path.GetDirectoryName(appFilePath)!);
 
         var json = JsonSerializer.Serialize(Current, SerializerOptions);
-        File.WriteAllText(userFilePath, json);
+        File.WriteAllText(appFilePath, json);
 
         Reload();
     }
@@ -76,14 +97,20 @@ public static class AppSettingsService
         var basePath = AppContext.BaseDirectory;
         var builder = new ConfigurationBuilder()
             .SetBasePath(basePath)
-            .AddJsonFile(AppSettingsFileName, optional: false, reloadOnChange: false)
-            .AddJsonFile(UserSettingsFileName, optional: true, reloadOnChange: false);
+            .AddJsonFile(AppSettingsFileName, optional: true, reloadOnChange: false);
 
-        var configuration = builder.Build();
-        var settings = configuration.Get<AppSettings>() ?? new AppSettings();
+        try
+        {
+            var configuration = builder.Build();
+            var settings = configuration.Get<AppSettings>() ?? new AppSettings();
 
-        EnsureShortcutDefaults(settings);
-        return settings;
+            EnsureDefaults(settings);
+            return settings;
+        }
+        catch
+        {
+            return new AppSettings();
+        }
     }
 
     /// EnsureShortcutDefaults
@@ -114,4 +141,51 @@ public static class AppSettingsService
         settings.Shortcuts.Clear();
         settings.Shortcuts.AddRange(orderedShortcuts);
     }
+
+    /// EnsureActionKeyDefaults
+    private static void EnsureActionKeyDefaults(AppSettings settings)
+    {
+        settings.ActionKeys ??= [];
+
+        var actionKeysByAction = settings.ActionKeys
+            .GroupBy(a => a.Action)
+            .ToDictionary(g => g.Key, g => g.Last());
+
+        var orderedActionKeys = new List<ActionKeySetting>();
+        foreach (var action in Enum.GetValues<ActionKeyType>())
+        {
+            if (!actionKeysByAction.TryGetValue(action, out var actionKey))
+            {
+                actionKey = new ActionKeySetting
+                {
+                    Action = action,
+                    Key = DefaultActionKeys.TryGetValue(action, out var defaultKey) ? defaultKey : Key.None
+                };
+            }
+
+            orderedActionKeys.Add(actionKey);
+        }
+
+        settings.ActionKeys.Clear();
+        settings.ActionKeys.AddRange(orderedActionKeys);
+    }
+
+    /// EnsureDefaults
+    private static void EnsureDefaults(AppSettings settings)
+    {
+        EnsureShortcutDefaults(settings);
+        EnsureActionKeyDefaults(settings);
+    }
+
+    private static readonly Dictionary<ActionKeyType, Key> DefaultActionKeys = new()
+    {
+        { ActionKeyType.PreviousFile, Key.Left },
+        { ActionKeyType.NextFile, Key.Right },
+        { ActionKeyType.RotateLeft, Key.Q },
+        { ActionKeyType.RotateRight, Key.E },
+        { ActionKeyType.RandomFile, Key.Z },
+        { ActionKeyType.Refresh, Key.F5 },
+        { ActionKeyType.SelectDirectory, Key.F9 },
+        { ActionKeyType.RemoveFile, Key.Delete }
+    };
 }

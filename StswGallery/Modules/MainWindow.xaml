@@ -34,7 +34,7 @@
                               Visibility="{Binding DirectoryPath, Converter={x:Static se:StswExistenceConverter.Instance}, ConverterParameter=null}"/>
             <!-- option panel -->
             <se:StswSidePanel MinHeight="50"
-                              MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType={x:Type Grid}}, Converter={x:Static se:StswCalculateConverter.Instance}, ConverterParameter=-20}"
+                              MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType={x:Type Grid}}, Converter={x:Static se:StswCalculateConverter.Instance}, ConverterParameter='*0.99'}"
                               HorizontalAlignment="Center"
                               VerticalAlignment="Bottom"
                               HorizontalContentAlignment="Center">

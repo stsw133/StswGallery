@@ -11,7 +11,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 
 namespace StswGallery;
-public partial class MainContext : StswObservableObject
+public partial class MainContext : BaseContext
 {
     private CancellationTokenSource? _repeatRefreshCancellationTokenSource;
 
@@ -96,21 +96,34 @@ public partial class MainContext : StswObservableObject
         {
             cancellationToken.ThrowIfCancellationRequested();
 
+            var previousFilePath = CurrentFilePath;
             var files = new List<string>();
             await Task.Run(() =>
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                files = [.. Directory.EnumerateFiles(DirectoryPath).OrderBy(x => x, new StswNaturalStringComparer())];
+                files = [.. Directory.EnumerateFiles(DirectoryPath)
+                    .Where(IsSupportedImageFile)
+                    .OrderBy(x => x, new StswNaturalStringComparer())];
             }, cancellationToken);
 
             cancellationToken.ThrowIfCancellationRequested();
             DirectoryFiles = files;
 
-            if (!string.IsNullOrEmpty(CurrentFilePath) && files.IndexOf(CurrentFilePath) is int index && index >= 0)
-            {
-                CurrentFileIndex = index;
-                UpdateCurrentFilePath();
-            }
+            var existingIndex = !string.IsNullOrEmpty(previousFilePath)
+                ? files.FindIndex(x => string.Equals(x, previousFilePath, StringComparison.OrdinalIgnoreCase))
+                : -1;
+
+            if (existingIndex >= 0)
+                CurrentFileIndex = existingIndex;
+            else if (DirectoryFiles.Count > 0)
+                CurrentFileIndex = DirectoryFiles.Count - 1;
+            else
+                CurrentFileIndex = -1;
+
+            UpdateCurrentFilePath();
+
+            if (!string.Equals(CurrentFilePath, previousFilePath, StringComparison.OrdinalIgnoreCase))
+                ReadImageFromFile();
         }
     }
 
@@ -203,20 +216,37 @@ public partial class MainContext : StswObservableObject
     [StswCommand]
     async Task KeyPress(KeyEventArgs? e)
     {
-        if (e == null || string.IsNullOrEmpty(DirectoryPath) || IsConfigOpen)
+        if (e == null || IsConfigOpen)
             return;
 
-        Func<Task>? action = e.Key switch
+        if (e.Key is >= Key.D0 and <= Key.D9)
         {
-            Key.Left => () => { PreviousFile(); return Task.CompletedTask; },
-            Key.Right => () => { NextFile(); return Task.CompletedTask; },
-            Key.Q => () => { RotateLeft(); return Task.CompletedTask; },
-            Key.E => () => { RotateRight(); return Task.CompletedTask; },
-            Key.Z => () => { RandomFile(); return Task.CompletedTask; },
-            Key.F5 => Refresh,
-            Key.F9 => SelectDirectory,
-            Key.Delete => () => { RemoveFile(); return Task.CompletedTask; },
-            >= Key.D0 and <= Key.D9 => () => { KeyNumber(e.Key - Key.D0); return Task.CompletedTask; },
+            KeyNumber(e.Key - Key.D0);
+            return;
+        }
+
+        if (e.Key is >= Key.NumPad0 and <= Key.NumPad9)
+        {
+            KeyNumber(e.Key - Key.NumPad0);
+            return;
+        }
+
+        var actionSetting = AppSettingsService.GetActionKeySettings().FirstOrDefault(s => s.Key == e.Key);
+        if (actionSetting == null)
+            return;
+
+        Func<Task>? action = actionSetting.Action switch
+        {
+            ActionKeyType.Refresh => Refresh,
+            ActionKeyType.SelectDirectory => SelectDirectory,
+            ActionKeyType.RemoveFile => () => { RemoveFile(); return Task.CompletedTask; },
+            ActionKeyType.PreviousFile => () => { PreviousFile(); return Task.CompletedTask; },
+            ActionKeyType.NextFile => () => { NextFile(); return Task.CompletedTask; },
+            ActionKeyType.FirstFile => () => { FirstFile(); return Task.CompletedTask; },
+            ActionKeyType.LastFile => () => { LastFile(); return Task.CompletedTask; },
+            ActionKeyType.RandomFile => () => { RandomFile(); return Task.CompletedTask; },
+            ActionKeyType.RotateLeft => () => { RotateLeft(); return Task.CompletedTask; },
+            ActionKeyType.RotateRight => () => { RotateRight(); return Task.CompletedTask; },
             _ => null
         };
         if (action == null)
@@ -288,6 +318,24 @@ public partial class MainContext : StswObservableObject
         ReadImageFromFile();
     }
 
+    /// FirstFile
+    [StswCommand]
+    void FirstFile()
+    {
+        CurrentFileIndex = 0;
+        UpdateCurrentFilePath();
+        ReadImageFromFile();
+    }
+
+    /// LastFile
+    [StswCommand]
+    void LastFile()
+    {
+        CurrentFileIndex = DirectoryFiles.Count - 1;
+        UpdateCurrentFilePath();
+        ReadImageFromFile();
+    }
+
     /// ReadImageFile
     private void ReadImageFromFile()
     {
@@ -327,6 +375,23 @@ public partial class MainContext : StswObservableObject
 
 
     private static readonly Random _random = new();
+    private static readonly HashSet<string> _supportedImageExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".bmp",
+        ".dib",
+        ".gif",
+        ".ico",
+        ".jpe",
+        ".jfif",
+        ".jpeg",
+        ".jpg",
+        ".png",
+        ".tif",
+        ".tiff",
+        ".webp"
+    };
+    private static bool IsSupportedImageFile(string path) => _supportedImageExtensions.Contains(Path.GetExtension(path));
+
     [StswObservableProperty] ConfigContext _configContext = new();
     [StswObservableProperty] int _currentFileIndex = -1;
     [StswObservableProperty] string? _currentFilePath;

@@ -1,402 +1,337 @@
-﻿using System;
+﻿using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Input;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform.Storage;
+using CommunityToolkit.Mvvm.Input;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Processing;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
-using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Input;
-using System.Windows.Media;
 
 namespace StswGallery;
-public partial class MainContext : BaseContext
+
+public partial class MainContext : StswObservableObject
 {
-    private CancellationTokenSource? _repeatRefreshCancellationTokenSource;
-
-    /// Init
-    [StswCommand]
-    void Init()
+    private static readonly Random Random = new();
+    private static readonly HashSet<string> SupportedExtensions = new(StringComparer.OrdinalIgnoreCase)
     {
-        App.Current.Exit += OnApplicationExit;
-        StartRepeatRefresh();
+        ".bmp", ".dib", ".gif", ".ico", ".jpe", ".jfif", ".jpeg", ".jpg", ".png", ".tif", ".tiff", ".webp"
+    };
+
+    private readonly CancellationTokenSource _cts = new();
+    private string? _directoryPath;
+    private string? _currentFilePath;
+    private Bitmap? _currentImage;
+    private int _currentFileIndex = -1;
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    public string? DirectoryPath
+    {
+        get => _directoryPath;
+        set => Set(ref _directoryPath, value);
     }
 
-    /// StartRepeatRefresh
-    void StartRepeatRefresh()
+    public Bitmap? CurrentImage
     {
-        CancelRepeatRefresh();
-        _repeatRefreshCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(App.CancellationToken);
-        _ = RepeatRefresh(_repeatRefreshCancellationTokenSource.Token);
+        get => _currentImage;
+        set
+        {
+            Set(ref _currentImage, value);
+            OnPropertyChanged(nameof(IsImageMissing));
+        }
     }
 
-    /// CancelRepeatRefresh
-    void CancelRepeatRefresh()
+    public bool IsImageMissing => CurrentImage is null;
+
+    public List<string> DirectoryFiles { get; private set; } = [];
+
+    public MainContext()
     {
-        if (_repeatRefreshCancellationTokenSource == null)
+        AppSettingsService.Reload();
+        _ = RepeatRefreshAsync();
+    }
+
+    public async Task SelectDirectoryAsync(Window owner)
+    {
+        var folders = await owner.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        {
+            Title = "Wybierz folder ze zdjęciami",
+            AllowMultiple = false
+        });
+
+        var selected = folders.FirstOrDefault()?.TryGetLocalPath();
+        if (string.IsNullOrWhiteSpace(selected))
             return;
 
-        if (!_repeatRefreshCancellationTokenSource.IsCancellationRequested)
-            _repeatRefreshCancellationTokenSource.Cancel();
-        _repeatRefreshCancellationTokenSource.Dispose();
-        _repeatRefreshCancellationTokenSource = null;
+        DirectoryPath = selected;
+        await RefreshAsync();
+        _currentFileIndex = 0;
+        UpdateCurrentFilePath();
+        ReadImageFromFile();
     }
 
-    /// RepeatRefresh
-    async Task RepeatRefresh(CancellationToken cancellationToken)
+    public async Task HandleKeyPressAsync(Key key, Window owner)
     {
-        while (!cancellationToken.IsCancellationRequested)
+        if (key is >= Key.D0 and <= Key.D9)
         {
-            await RefreshAsync(cancellationToken);
-            try
-            {
-                await Task.Delay(TimeSpan.FromSeconds(15), cancellationToken);
-            }
-            catch (TaskCanceledException)
-            {
+            KeyNumber(key - Key.D0);
+            return;
+        }
+
+        if (key is >= Key.NumPad0 and <= Key.NumPad9)
+        {
+            KeyNumber(key - Key.NumPad0);
+            return;
+        }
+
+        switch (AppSettingsService.MapAction(key))
+        {
+            case ActionKeyType.Refresh:
+                await RefreshAsync();
                 break;
-            }
+            case ActionKeyType.SelectDirectory:
+                await SelectDirectoryAsync(owner);
+                break;
+            case ActionKeyType.RemoveFile:
+                RemoveFile();
+                break;
+            case ActionKeyType.PreviousFile:
+                PreviousFile();
+                break;
+            case ActionKeyType.NextFile:
+                NextFile();
+                break;
+            case ActionKeyType.FirstFile:
+                FirstFile();
+                break;
+            case ActionKeyType.LastFile:
+                LastFile();
+                break;
+            case ActionKeyType.RandomFile:
+                RandomFile();
+                break;
+            case ActionKeyType.RotateLeft:
+                RotateLeft();
+                break;
+            case ActionKeyType.RotateRight:
+                RotateRight();
+                break;
         }
     }
 
-    /// OnApplicationExit
-    void OnApplicationExit(object? sender, ExitEventArgs e)
+    public async Task RefreshAsync()
     {
-        Application.Current.Exit -= OnApplicationExit;
-        CancelRepeatRefresh();
-    }
+        if (string.IsNullOrWhiteSpace(DirectoryPath) || !Directory.Exists(DirectoryPath))
+            return;
 
-    /// SelectDirectory
-    [StswCommand]
-    async Task SelectDirectory()
-    {
-        var dialog = new System.Windows.Forms.FolderBrowserDialog();
-        if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-        {
-            DirectoryPath = dialog.SelectedPath;
-            await Refresh();
-            CurrentFileIndex = 0;
-            UpdateCurrentFilePath();
+        var previous = _currentFilePath;
+        var files = await Task.Run(() => Directory.EnumerateFiles(DirectoryPath)
+            .Where(IsSupportedImageFile)
+            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+            .ToList());
+
+        DirectoryFiles = files;
+
+        var existingIndex = !string.IsNullOrWhiteSpace(previous)
+            ? files.FindIndex(x => string.Equals(x, previous, StringComparison.OrdinalIgnoreCase))
+            : -1;
+
+        if (existingIndex >= 0)
+            _currentFileIndex = existingIndex;
+        else if (DirectoryFiles.Count > 0)
+            _currentFileIndex = DirectoryFiles.Count - 1;
+        else
+            _currentFileIndex = -1;
+
+        UpdateCurrentFilePath();
+
+        if (!string.Equals(previous, _currentFilePath, StringComparison.OrdinalIgnoreCase))
             ReadImageFromFile();
-        }
     }
 
-    /// Refresh
-    [StswCommand]
-    async Task Refresh() => await RefreshAsync();
-
-    /// RefreshAsync
-    async Task RefreshAsync(CancellationToken cancellationToken = default)
+    public void RemoveFile()
     {
-        if (!cancellationToken.CanBeCanceled)
-            cancellationToken = App.CancellationToken;
+        if (!File.Exists(_currentFilePath))
+            return;
 
-        if (Directory.Exists(DirectoryPath))
+        File.Delete(_currentFilePath!);
+        DirectoryFiles.Remove(_currentFilePath!);
+
+        UpdateCurrentFilePath();
+        ReadImageFromFile();
+    }
+
+    public void KeyNumber(int? number)
+    {
+        if (number is null or < 0 or > 9)
+            return;
+
+        var shortcut = AppSettingsService.GetShortcut(number.Value);
+        if (shortcut is null || shortcut.Type == ShortcutType.None || string.IsNullOrWhiteSpace(shortcut.Value))
+            return;
+
+        if (shortcut.Type == ShortcutType.MoveTo)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            if (!Directory.Exists(shortcut.Value) || _currentFilePath is null)
+                return;
 
-            var previousFilePath = CurrentFilePath;
-            var files = new List<string>();
-            await Task.Run(() =>
+            var newPath = Path.Combine(shortcut.Value, Path.GetFileName(_currentFilePath));
+            if (_currentFilePath != newPath && !File.Exists(newPath))
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                files = [.. Directory.EnumerateFiles(DirectoryPath)
-                    .Where(IsSupportedImageFile)
-                    .OrderBy(x => x, new StswNaturalStringComparer())];
-            }, cancellationToken);
-
-            cancellationToken.ThrowIfCancellationRequested();
-            DirectoryFiles = files;
-
-            var existingIndex = !string.IsNullOrEmpty(previousFilePath)
-                ? files.FindIndex(x => string.Equals(x, previousFilePath, StringComparison.OrdinalIgnoreCase))
-                : -1;
-
-            if (existingIndex >= 0)
-                CurrentFileIndex = existingIndex;
-            else if (DirectoryFiles.Count > 0)
-                CurrentFileIndex = DirectoryFiles.Count - 1;
-            else
-                CurrentFileIndex = -1;
-
-            UpdateCurrentFilePath();
-
-            if (!string.Equals(CurrentFilePath, previousFilePath, StringComparison.OrdinalIgnoreCase))
+                File.Move(_currentFilePath, newPath);
+                DirectoryFiles.Remove(_currentFilePath);
+                UpdateCurrentFilePath();
                 ReadImageFromFile();
+            }
+        }
+
+        if (shortcut.Type == ShortcutType.OpenWith)
+        {
+            if (!File.Exists(_currentFilePath) || string.IsNullOrWhiteSpace(shortcut.Value))
+                return;
+
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = shortcut.Value,
+                Arguments = $"\"{_currentFilePath}\""
+            });
         }
     }
 
-    /// Config
-    [StswCommand]
-    void Config()
+    public void PreviousFile()
     {
-        StswContentDialog.Show(ConfigContext, "ConfigContentDialog");
+        _currentFileIndex--;
+        UpdateCurrentFilePath();
+        ReadImageFromFile();
     }
 
-    /// RemoveFile
-    [StswCommand]
-    void RemoveFile()
+    public void NextFile()
     {
-        if (File.Exists(CurrentFilePath))
-        {
-            StswFn.MoveToRecycleBin(CurrentFilePath);
-            DirectoryFiles.Remove(CurrentFilePath);
-
-            UpdateCurrentFilePath();
-            ReadImageFromFile();
-        }
+        _currentFileIndex++;
+        UpdateCurrentFilePath();
+        ReadImageFromFile();
     }
 
-    /// KeyNumber
-    [StswCommand]
-    void KeyNumber(int? num)
+    public void FirstFile()
     {
-        if (num == null || !num.Between(0, 9))
-            return;
-
-        var shortcut = AppSettingsService.GetShortcut(num.Value);
-        if (shortcut == null)
-            return;
-
-        var shortcutType = shortcut.Type;
-        if (shortcut.Type == ShortcutType.None)
-            return;
-
-        var shortcutValue = shortcut.Value;
-        if (string.IsNullOrWhiteSpace(shortcutValue))
-            return;
-
-        switch (shortcutType)
-        {
-            case ShortcutType.None:
-                break;
-
-            case ShortcutType.MoveTo:
-                if (string.IsNullOrEmpty(shortcutValue) || !Directory.Exists(shortcutValue) || CurrentFilePath == null)
-                    break;
-
-                var newPath = Path.Combine(shortcutValue, Path.GetFileName(CurrentFilePath));
-                if (CurrentFilePath != newPath && !File.Exists(newPath))
-                {
-                    File.Move(CurrentFilePath, newPath);
-                    DirectoryFiles.Remove(CurrentFilePath);
-
-                    UpdateCurrentFilePath();
-                    ReadImageFromFile();
-                }
-
-                break;
-
-            case ShortcutType.OpenWith:
-                if (string.IsNullOrEmpty(shortcutValue) || string.IsNullOrEmpty(CurrentFilePath) || !File.Exists(CurrentFilePath))
-                    break;
-
-                try
-                {
-                    Process.Start(new ProcessStartInfo
-                    {
-                        FileName = shortcutValue,
-                        Arguments = $"\"{CurrentFilePath}\""
-                    });
-                }
-                catch
-                {
-                    // ignored
-                }
-
-                break;
-
-            default:
-                break;
-        }
+        _currentFileIndex = 0;
+        UpdateCurrentFilePath();
+        ReadImageFromFile();
     }
 
-    /// KeyPress
-    [StswCommand]
-    async Task KeyPress(KeyEventArgs? e)
+    public void LastFile()
     {
-        if (e == null || IsConfigOpen)
-            return;
-
-        if (e.Key is >= Key.D0 and <= Key.D9)
-        {
-            KeyNumber(e.Key - Key.D0);
-            return;
-        }
-
-        if (e.Key is >= Key.NumPad0 and <= Key.NumPad9)
-        {
-            KeyNumber(e.Key - Key.NumPad0);
-            return;
-        }
-
-        var actionSetting = AppSettingsService.GetActionKeySettings().FirstOrDefault(s => s.Key == e.Key);
-        if (actionSetting == null)
-            return;
-
-        Func<Task>? action = actionSetting.Action switch
-        {
-            ActionKeyType.Refresh => Refresh,
-            ActionKeyType.SelectDirectory => SelectDirectory,
-            ActionKeyType.RemoveFile => () => { RemoveFile(); return Task.CompletedTask; },
-            ActionKeyType.PreviousFile => () => { PreviousFile(); return Task.CompletedTask; },
-            ActionKeyType.NextFile => () => { NextFile(); return Task.CompletedTask; },
-            ActionKeyType.FirstFile => () => { FirstFile(); return Task.CompletedTask; },
-            ActionKeyType.LastFile => () => { LastFile(); return Task.CompletedTask; },
-            ActionKeyType.RandomFile => () => { RandomFile(); return Task.CompletedTask; },
-            ActionKeyType.RotateLeft => () => { RotateLeft(); return Task.CompletedTask; },
-            ActionKeyType.RotateRight => () => { RotateRight(); return Task.CompletedTask; },
-            _ => null
-        };
-        if (action == null)
-            return;
-        
-        await action();
+        _currentFileIndex = DirectoryFiles.Count - 1;
+        UpdateCurrentFilePath();
+        ReadImageFromFile();
     }
 
-    /// RandomFile
-    [StswCommand]
-    void RandomFile()
+    public void RandomFile()
     {
         if (DirectoryFiles.Count == 0)
             return;
 
-        CurrentFileIndex = _random.Next(DirectoryFiles.Count);
+        _currentFileIndex = Random.Next(DirectoryFiles.Count);
         UpdateCurrentFilePath();
         ReadImageFromFile();
     }
 
-    /// RotateLeft
-    [StswCommand]
-    void RotateLeft() => RotateImage(RotateFlipType.Rotate270FlipNone);
+    public void RotateLeft() => RotateImage(clockwise: false);
+    public void RotateRight() => RotateImage(clockwise: true);
 
-    /// RotateRight
-    [StswCommand]
-    void RotateRight() => RotateImage(RotateFlipType.Rotate90FlipNone);
-
-    /// RotateImage
-    private void RotateImage(RotateFlipType rotateFlipType)
+    private async Task RepeatRefreshAsync()
     {
-        if (!File.Exists(CurrentFilePath))
-            return;
+        while (!_cts.Token.IsCancellationRequested)
+        {
+            await RefreshAsync();
+            await Task.Delay(TimeSpan.FromSeconds(15), _cts.Token);
+        }
+    }
 
-        var isRotated = false;
+    private void RotateImage(bool clockwise)
+    {
+        if (!File.Exists(_currentFilePath))
+            return;
 
         try
         {
-            using var memoryStream = new MemoryStream(File.ReadAllBytes(CurrentFilePath));
-            using var bitmap = Image.FromStream(memoryStream);
-            bitmap.RotateFlip(rotateFlipType);
-            bitmap.Save(CurrentFilePath, bitmap.RawFormat);
-            isRotated = true;
+            using var image = SixLabors.ImageSharp.Image.Load(_currentFilePath!);
+
+            image.Mutate(x =>
+            {
+                if (clockwise)
+                    x.Rotate(90);
+                else
+                    x.Rotate(270);
+            });
+
+            image.Save(_currentFilePath!);
+            ReadImageFromFile();
         }
         catch
         {
-            isRotated = false;
-        }
-
-        if (isRotated)
-            ReadImageFromFile();
-    }
-
-    /// PreviousFile
-    [StswCommand]
-    void PreviousFile()
-    {
-        CurrentFileIndex--;
-        UpdateCurrentFilePath();
-        ReadImageFromFile();
-    }
-
-    /// NextFile
-    [StswCommand]
-    void NextFile()
-    {
-        CurrentFileIndex++;
-        UpdateCurrentFilePath();
-        ReadImageFromFile();
-    }
-
-    /// FirstFile
-    [StswCommand]
-    void FirstFile()
-    {
-        CurrentFileIndex = 0;
-        UpdateCurrentFilePath();
-        ReadImageFromFile();
-    }
-
-    /// LastFile
-    [StswCommand]
-    void LastFile()
-    {
-        CurrentFileIndex = DirectoryFiles.Count - 1;
-        UpdateCurrentFilePath();
-        ReadImageFromFile();
-    }
-
-    /// ReadImageFile
-    private void ReadImageFromFile()
-    {
-        if (File.Exists(CurrentFilePath))
-        {
-            StswApp.StswWindow.Title = Path.GetFileName(CurrentFilePath);
-
-            try
-            {
-                ImageSource = StswFnUI.BytesToBitmapImage(File.ReadAllBytes(CurrentFilePath));
-            }
-            catch
-            {
-                ImageSource = null;
-            }
-        }
-        else
-        {
-            StswApp.StswWindow.Title = string.Empty;
-            ImageSource = null;
+            CurrentImage = null;
         }
     }
 
-    /// UpdateCurrentFilePath
     private void UpdateCurrentFilePath()
     {
         if (DirectoryFiles.Count == 0)
         {
-            CurrentFilePath = null;
+            _currentFilePath = null;
             return;
         }
 
-        CurrentFileIndex = Math.Clamp(CurrentFileIndex, 0, DirectoryFiles.Count - 1);
-        CurrentFilePath = DirectoryFiles.ElementAtOrDefault(CurrentFileIndex);
+        _currentFileIndex = Math.Clamp(_currentFileIndex, 0, DirectoryFiles.Count - 1);
+        _currentFilePath = DirectoryFiles[_currentFileIndex];
     }
 
-
-
-    private static readonly Random _random = new();
-    private static readonly HashSet<string> _supportedImageExtensions = new(StringComparer.OrdinalIgnoreCase)
+    private void ReadImageFromFile()
     {
-        ".bmp",
-        ".dib",
-        ".gif",
-        ".ico",
-        ".jpe",
-        ".jfif",
-        ".jpeg",
-        ".jpg",
-        ".png",
-        ".tif",
-        ".tiff",
-        ".webp"
-    };
-    private static bool IsSupportedImageFile(string path) => _supportedImageExtensions.Contains(Path.GetExtension(path));
+        if (!File.Exists(_currentFilePath))
+        {
+            CurrentImage = null;
+            return;
+        }
 
-    [StswObservableProperty] ConfigContext _configContext = new();
-    [StswObservableProperty] int _currentFileIndex = -1;
-    [StswObservableProperty] string? _currentFilePath;
-    [StswObservableProperty] List<string> _directoryFiles = [];
-    [StswObservableProperty] string? _directoryPath;
-    [StswObservableProperty] ImageSource? _imageSource;
-    [StswObservableProperty] bool _isConfigOpen;
+        try
+        {
+            using var fs = File.OpenRead(_currentFilePath!);
+            CurrentImage = new Bitmap(fs);
+        }
+        catch
+        {
+            CurrentImage = null;
+        }
+    }
+
+    private static bool IsSupportedImageFile(string path) => SupportedExtensions.Contains(Path.GetExtension(path));
+
+    private void Set<T>(ref T field, T value, [CallerMemberName] string? property = null)
+    {
+        if (EqualityComparer<T>.Default.Equals(field, value))
+            return;
+
+        field = value;
+        OnPropertyChanged(property);
+    }
+
+    [RelayCommand] async Task OnSelectDirectory() => await SelectDirectoryAsync(App.Current.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop ? desktop.MainWindow : null);
+    [RelayCommand] async Task OnRefresh() => await RefreshAsync();
+    [RelayCommand] void OnRemoveFile() => RemoveFile();
+    [RelayCommand] void OnRotateLeft() => RotateLeft();
+    [RelayCommand] void OnRotateRight() => RotateRight();
+    [RelayCommand] void OnPrevious() => PreviousFile();
+    [RelayCommand] void OnNext() => NextFile();
+    [RelayCommand] void OnRandom() => RandomFile();
+    async void OnKeyDown(object? sender, KeyEventArgs e) => await HandleKeyPressAsync(e.Key, App.Current.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop ? desktop.MainWindow : null);
 }

@@ -1,0 +1,36 @@
+<Window x:Class="StswGallery.MainWindow"
+		xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="using:StswGallery"
+        mc:Ignorable="d" Width="1200" Height="800" WindowStartupLocation="CenterScreen"
+        x:DataType="local:MainContext" Title="StswGallery" Icon="/Assets/icon.ico">
+    <Design.DataContext>
+		<local:MainContext/>
+    </Design.DataContext>
+
+	<DockPanel>
+		<Border DockPanel.Dock="Bottom" Padding="8" Background="#222">
+			<Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto,Auto,Auto,Auto" ColumnSpacing="8">
+				<!-- <Button Grid.Column="0" Content="Select directory" Command="{Binding OnSelectDirectoryCommand}"/> -->
+				<!-- <Button Grid.Column="1" Content="Refresh" Command="{Binding OnRefreshCommand}"/> -->
+				<!-- <Button Grid.Column="2" Content="Delete" Command="{Binding OnRemoveFileCommand}"/> -->
+				<!-- <Button Grid.Column="3" Content="↶" Command="{Binding OnRotateLeftCommand}"/> -->
+				<TextBlock Grid.Column="4" Text="{Binding DirectoryPath}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+				<!-- <Button Grid.Column="5" Content="↷" Command="{Binding OnRotateRightCommand}"/> -->
+				<!-- <Button Grid.Column="6" Content="←" Command="{Binding OnPreviousCommand}"/> -->
+				<!-- <Button Grid.Column="7" Content="Random" Command="{Binding OnRandomCommand}"/> -->
+				<!-- <Button Grid.Column="8" Content="→" Command="{Binding OnNextCommand}"/> -->
+			</Grid>
+		</Border>
+
+		<Grid>
+			<Image Source="{Binding CurrentImage}" Stretch="Uniform" />
+			<TextBlock Text="Press 'Select directory', to start..."
+                       IsVisible="{Binding IsImageMissing}"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"/>
+		</Grid>
+	</DockPanel>
+</Window>

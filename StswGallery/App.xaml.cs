@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -18,6 +19,7 @@ namespace StswGallery;
 public partial class App : StswApp
 {
     public static IConfiguration Configuration { get; private set; } = null!;
+    public static string? StartupFilePath { get; private set; }
     //public static IServiceProvider? ServiceProvider { get; private set; }
 
     public static CancellationTokenSource CancellationTokenSource { get; } = new();
@@ -45,6 +47,10 @@ public partial class App : StswApp
         //        throw;
         //    }
         //}
+
+        /// StartupFilePath
+        if (e.Args.Length > 0 && File.Exists(e.Args[0]))
+            StartupFilePath = e.Args[0];
 
         /// Configuration
         var configurationBuilder = new ConfigurationBuilder()

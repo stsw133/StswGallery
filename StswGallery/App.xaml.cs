@@ -1,11 +1,9 @@
-﻿global using StswExpress;
-global using StswExpress.Commons;
+﻿global using StswExpress.Commons;
+global using StswExpress.Wpf;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
-using System.Configuration;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -20,7 +18,7 @@ namespace StswGallery;
 public partial class App : StswApp
 {
     public static IConfiguration Configuration { get; private set; } = null!;
-    public static IServiceProvider? ServiceProvider { get; private set; }
+    //public static IServiceProvider? ServiceProvider { get; private set; }
 
     public static CancellationTokenSource CancellationTokenSource { get; } = new();
     public static CancellationToken CancellationToken => CancellationTokenSource.Token;

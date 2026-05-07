@@ -14,9 +14,36 @@ namespace StswGallery;
 public partial class MainContext : BaseContext
 {
     private CancellationTokenSource? _repeatRefreshCancellationTokenSource;
+	private static readonly Random _random = new();
+	private static readonly HashSet<string> _supportedImageExtensions = new(StringComparer.OrdinalIgnoreCase)
+	{
+		".bmp",
+		".dib",
+		".gif",
+		".ico",
+		".jpe",
+		".jfif",
+		".jpeg",
+		".jpg",
+		".png",
+		".tif",
+		".tiff",
+		".webp"
+	};
+	private static bool IsSupportedImageFile(string path) => _supportedImageExtensions.Contains(Path.GetExtension(path));
 
-    /// Init
-    [StswCommand]
+	[StswObservableProperty] ConfigContext _configContext = new();
+	[StswObservableProperty] FileInfoModel _currentFile = new();
+	[StswObservableProperty] int _currentFileIndex = -1;
+	[StswObservableProperty] string? _currentFilePath;
+	[StswObservableProperty] List<string> _directoryFiles = [];
+	[StswObservableProperty] string? _directoryPath;
+	[StswObservableProperty] ImageSource? _imageSource;
+	[StswObservableProperty] bool _isConfigOpen;
+	[StswObservableProperty] bool _isSidePanelLocked;
+
+	/// Init
+	[StswCommand]
     void Init()
     {
         App.Current.Exit += OnApplicationExit;
@@ -127,12 +154,13 @@ public partial class MainContext : BaseContext
         }
     }
 
+    /// LockSidePanel
+    [StswCommand]
+    void LockSidePanel() => IsSidePanelLocked = !IsSidePanelLocked;
+
     /// Config
     [StswCommand]
-    void Config()
-    {
-        StswContentDialog.Show(ConfigContext, "ConfigContentDialog");
-    }
+    void Config() => StswContentDialog.Show(ConfigContext, "ConfigContentDialog");
 
     /// RemoveFile
     [StswCommand]
@@ -245,8 +273,8 @@ public partial class MainContext : BaseContext
             ActionKeyType.FirstFile => () => { FirstFile(); return Task.CompletedTask; },
             ActionKeyType.LastFile => () => { LastFile(); return Task.CompletedTask; },
             ActionKeyType.RandomFile => () => { RandomFile(); return Task.CompletedTask; },
-            ActionKeyType.RotateLeft => () => { RotateLeft(); return Task.CompletedTask; },
-            ActionKeyType.RotateRight => () => { RotateRight(); return Task.CompletedTask; },
+            ActionKeyType.RotateLeft => () => { RotateFlipImage(RotateFlipType.Rotate90FlipNone); return Task.CompletedTask; },
+            ActionKeyType.RotateRight => () => { RotateFlipImage(RotateFlipType.Rotate270FlipNone); return Task.CompletedTask; },
             _ => null
         };
         if (action == null)
@@ -267,16 +295,9 @@ public partial class MainContext : BaseContext
         ReadImageFromFile();
     }
 
-    /// RotateLeft
-    [StswCommand]
-    void RotateLeft() => RotateImage(RotateFlipType.Rotate270FlipNone);
-
-    /// RotateRight
-    [StswCommand]
-    void RotateRight() => RotateImage(RotateFlipType.Rotate90FlipNone);
-
-    /// RotateImage
-    private void RotateImage(RotateFlipType rotateFlipType)
+	/// RotateFlipImage
+	[StswCommand]
+	void RotateFlipImage(RotateFlipType rotateFlipType)
     {
         if (!File.Exists(CurrentFilePath))
             return;
@@ -300,8 +321,8 @@ public partial class MainContext : BaseContext
             ReadImageFromFile();
     }
 
-    /// PreviousFile
-    [StswCommand]
+	/// PreviousFile
+	[StswCommand]
     void PreviousFile()
     {
         CurrentFileIndex--;
@@ -351,7 +372,21 @@ public partial class MainContext : BaseContext
             {
                 ImageSource = null;
             }
-        }
+
+            var info = new FileInfo(CurrentFilePath);
+            CurrentFile = new FileInfoModel
+            {
+                Name = info.Name,
+                Extension = info.Extension,
+                DirectoryName = info.DirectoryName,
+                FullPath = info.FullName,
+                Size = info.Length,
+                Height = ImageSource?.Height ?? 0,
+                Width = ImageSource?.Width ?? 0,
+                CreatedTime = info.CreationTime,
+                ModifiedTime = info.LastWriteTime,
+			};
+		}
         else
         {
             StswApp.StswWindow.Title = string.Empty;
@@ -371,32 +406,4 @@ public partial class MainContext : BaseContext
         CurrentFileIndex = Math.Clamp(CurrentFileIndex, 0, DirectoryFiles.Count - 1);
         CurrentFilePath = DirectoryFiles.ElementAtOrDefault(CurrentFileIndex);
     }
-
-
-
-    private static readonly Random _random = new();
-    private static readonly HashSet<string> _supportedImageExtensions = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ".bmp",
-        ".dib",
-        ".gif",
-        ".ico",
-        ".jpe",
-        ".jfif",
-        ".jpeg",
-        ".jpg",
-        ".png",
-        ".tif",
-        ".tiff",
-        ".webp"
-    };
-    private static bool IsSupportedImageFile(string path) => _supportedImageExtensions.Contains(Path.GetExtension(path));
-
-    [StswObservableProperty] ConfigContext _configContext = new();
-    [StswObservableProperty] int _currentFileIndex = -1;
-    [StswObservableProperty] string? _currentFilePath;
-    [StswObservableProperty] List<string> _directoryFiles = [];
-    [StswObservableProperty] string? _directoryPath;
-    [StswObservableProperty] ImageSource? _imageSource;
-    [StswObservableProperty] bool _isConfigOpen;
 }

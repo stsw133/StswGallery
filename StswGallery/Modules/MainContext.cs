@@ -44,9 +44,22 @@ public partial class MainContext : BaseContext
 
 	/// Init
 	[StswCommand]
-    void Init()
+    async Task Init()
     {
         App.Current.Exit += OnApplicationExit;
+
+        var startupFilePath = App.StartupFilePath;
+        if (!string.IsNullOrEmpty(startupFilePath) && File.Exists(startupFilePath) && IsSupportedImageFile(startupFilePath))
+        {
+            var directoryPath = Path.GetDirectoryName(startupFilePath);
+            if (!string.IsNullOrEmpty(directoryPath))
+            {
+                DirectoryPath = directoryPath;
+                CurrentFilePath = startupFilePath;
+                await RefreshAsync();
+            }
+        }
+
         StartRepeatRefresh();
     }
 

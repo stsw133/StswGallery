@@ -9,10 +9,11 @@ using System.Windows.Input;
 
 namespace StswGallery;
 
-public class AppSettings
+public partial class AppSettings : StswObservableObject
 {
-    public List<ActionKeySetting> ActionKeys { get; set; } = [];
-    public List<ShortcutSetting> Shortcuts { get; set; } = [];
+    [StswObservableProperty] List<ActionKeySetting> _actionKeys = [];
+    [StswObservableProperty] List<ShortcutSetting> _shortcuts = [];
+    [StswObservableProperty] bool _useDefaultStretchDirection;
 }
 
 public class ActionKeySetting

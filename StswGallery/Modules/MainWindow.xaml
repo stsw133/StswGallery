@@ -22,7 +22,18 @@
         <Grid>
             <!-- image -->
             <se:StswZoomControl x:Name="ZoomControl">
-                <Image Source="{Binding ImageSource}" Stretch="Uniform" StretchDirection="DownOnly" RenderOptions.BitmapScalingMode="Fant"/>
+                <Image Source="{Binding ImageSource}" Stretch="Uniform" RenderOptions.BitmapScalingMode="Fant">
+                    <Image.Style>
+                        <Style TargetType="{x:Type Image}">
+                            <Setter Property="StretchDirection" Value="DownOnly"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ConfigContext.Settings.UseDefaultStretchDirection}" Value="True">
+                                    <Setter Property="StretchDirection" Value="Both"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Image.Style>
+                </Image>
             </se:StswZoomControl>
             <!-- default button -->
             <se:StswSubButton d:Foreground="White"
@@ -135,7 +146,7 @@
                                           Width="100"/>
 							<se:StswSeparator DockPanel.Dock="Right" Orientation="Vertical"/>
                             <!-- center -->
-                            <ItemsControl HorizontalAlignment="Center" ItemsSource="{Binding ConfigContext.Shortcuts}">
+                            <ItemsControl HorizontalAlignment="Center" ItemsSource="{Binding ConfigContext.Settings.Shortcuts}">
                                 <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate>
                                         <StackPanel Orientation="Horizontal"/>
@@ -148,7 +159,7 @@
                                                        CommandParameter="{Binding Number}"
                                                        Focusable="False"
                                                        Margin="0">
-                                            <se:StswIcon Data="{Binding ButtonIcon}"/>
+                                            <se:StswLabel Content="{Binding Number}" Width="20"/>
                                         </se:StswButton>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>

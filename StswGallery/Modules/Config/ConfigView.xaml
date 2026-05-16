@@ -28,6 +28,12 @@
 
             <se:StswScrollView>
                 <StackPanel>
+                    <se:StswCheckBox Margin="6 10 6 0"
+                                     Content="Allow image upscaling (StretchDirection.Both)"
+                                     IsChecked="{Binding Settings.UseDefaultStretchDirection, Mode=TwoWay}"/>
+
+                    <se:StswSeparator BorderThickness="1"/>
+
                     <!-- keys 0-9 settings -->
                     <se:StswLabel DockPanel.Dock="Top"
                                   Content="NUMBER SHORTCUTS"
@@ -35,13 +41,14 @@
                                   FontWeight="Bold"
                                   HorizontalAlignment="Center"
                                   Margin="0 10 0 0"/>
-                    <ItemsControl DockPanel.Dock="Top" Margin="3" ItemsSource="{Binding Shortcuts}">
+                    <ItemsControl DockPanel.Dock="Top" Margin="3" ItemsSource="{Binding Settings.Shortcuts}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Grid Margin="3" se:StswGrid.ColumnDefinitions="25,150,500">
-                                    <se:StswIcon Grid.Column="0"
-                                                 Data="{Binding ConfigIcon}"
-                                                 Margin="3"/>
+                                <Grid Margin="3" se:StswGrid.ColumnDefinitions="40,150,500">
+                                    <se:StswLabel Grid.Column="0"
+                                                  Content="{Binding Number}"
+                                                  HorizontalContentAlignment="Right"
+                                                  Margin="3"/>
                                     <se:StswComboBox Grid.Column="1"
                                                      DisplayMemberPath="Display"
                                                      ItemsSource="{Binding DataContext.ShortcutTypes, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}, Mode=OneTime}"
@@ -65,12 +72,12 @@
                                   FontWeight="Bold"
                                   HorizontalAlignment="Center"
                                   Margin="0 10 0 0"/>
-                    <ItemsControl DockPanel.Dock="Top" Margin="3" ItemsSource="{Binding ActionKeys}">
+                    <ItemsControl DockPanel.Dock="Top" Margin="3" ItemsSource="{Binding Settings.ActionKeys}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <Grid Margin="3" se:StswGrid.ColumnDefinitions="175,500">
                                     <se:StswLabel Grid.Column="0"
-                                                  Content="{Binding DisplayName}"
+                                                  Content="{Binding Action, Converter={x:Static local:ActionKeyTypeDescriptionConverter.Instance}}"
                                                   Margin="3"
                                                   HorizontalContentAlignment="Right"
                                                   VerticalAlignment="Center"/>

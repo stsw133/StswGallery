@@ -9,10 +9,11 @@ using System.Windows.Input;
 
 namespace StswGallery;
 
-public class AppSettings
+public partial class AppSettings : StswObservableObject
 {
-    public List<ActionKeySetting> ActionKeys { get; set; } = [];
-    public List<ShortcutSetting> Shortcuts { get; set; } = [];
+    [StswObservableProperty] List<ActionKeySetting> _actionKeys = [];
+    [StswObservableProperty] List<ShortcutSetting> _shortcuts = [];
+    [StswObservableProperty] bool _useDefaultStretchDirection;
 }
 
 public class ActionKeySetting
@@ -38,7 +39,7 @@ public static class AppSettingsService
         Converters = { new JsonStringEnumConverter() }
     };
 
-    public static AppSettings Current { get; private set; } = new();
+    public static AppSettings Current { get; } = new();
     public static event EventHandler? SettingsChanged;
 
     static AppSettingsService()
@@ -49,7 +50,10 @@ public static class AppSettingsService
     /// Reload
     public static void Reload()
     {
-        Current = Load();
+        var loaded = Load();
+        Current.ActionKeys = loaded.ActionKeys;
+        Current.Shortcuts = loaded.Shortcuts;
+        Current.UseDefaultStretchDirection = loaded.UseDefaultStretchDirection;
         SettingsChanged?.Invoke(null, EventArgs.Empty);
     }
 

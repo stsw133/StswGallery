@@ -48,7 +48,7 @@ public partial class ConfigContext : BaseContext
                 string description = memberInfo[0].GetCustomAttributes(typeof(DescriptionAttribute), false)
                                                   .FirstOrDefault() is DescriptionAttribute descriptionAttribute ? descriptionAttribute.Description : value.ToString();
 
-                enumList.Add(new() { Value = (int)(object)value, Display = description });
+                enumList.Add(new() { Value = value, Display = description });
             }
         }
 

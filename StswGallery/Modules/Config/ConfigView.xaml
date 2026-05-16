@@ -28,11 +28,11 @@
 
             <se:StswScrollView>
                 <StackPanel>
-                    <CheckBox Margin="6 10 6 0"
-                              Content="Allow image upscaling (StretchDirection.Both)"
-                              IsChecked="{Binding Settings.UseDefaultStretchDirection, Mode=TwoWay}"/>
+                    <se:StswCheckBox Margin="6 10 6 0"
+                                     Content="Allow image upscaling (StretchDirection.Both)"
+                                     IsChecked="{Binding Settings.UseDefaultStretchDirection, Mode=TwoWay}"/>
 
-                    <se:StswSeparator DockPanel.Dock="Top" BorderThickness="1"/>
+                    <se:StswSeparator BorderThickness="1"/>
 
                     <!-- keys 0-9 settings -->
                     <se:StswLabel DockPanel.Dock="Top"
@@ -77,7 +77,7 @@
                             <DataTemplate>
                                 <Grid Margin="3" se:StswGrid.ColumnDefinitions="175,500">
                                     <se:StswLabel Grid.Column="0"
-                                                  Content="{Binding Action}"
+                                                  Content="{Binding Action, Converter={x:Static local:ActionKeyTypeDescriptionConverter.Instance}}"
                                                   Margin="3"
                                                   HorizontalContentAlignment="Right"
                                                   VerticalAlignment="Center"/>

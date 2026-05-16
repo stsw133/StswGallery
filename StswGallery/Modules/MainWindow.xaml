@@ -159,7 +159,7 @@
                                                        CommandParameter="{Binding Number}"
                                                        Focusable="False"
                                                        Margin="0">
-                                            <se:StswLabel Content="{Binding Number}" Width="20"/>
+                                            <se:StswLabel Content="{Binding Number}" HorizontalContentAlignment="Center" Width="20"/>
                                         </se:StswButton>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>

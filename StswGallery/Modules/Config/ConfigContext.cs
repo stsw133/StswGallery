@@ -10,7 +10,6 @@ public partial class ConfigContext : BaseContext
     public ConfigContext()
     {
         Settings = AppSettingsService.Current;
-        AppSettingsService.SettingsChanged += OnSettingsChanged;
     }
 
     /// Save
@@ -62,10 +61,4 @@ public partial class ConfigContext : BaseContext
         .Where(k => k != Key.None)
         .OrderBy(k => k.ToString())
         .Prepend(Key.None)];
-
-    /// OnSettingsChanged
-    private void OnSettingsChanged(object? sender, EventArgs e)
-    {
-        Settings = AppSettingsService.Current;
-    }
 }

@@ -39,7 +39,7 @@ public static class AppSettingsService
         Converters = { new JsonStringEnumConverter() }
     };
 
-    public static AppSettings Current { get; private set; } = new();
+    public static AppSettings Current { get; } = new();
     public static event EventHandler? SettingsChanged;
 
     static AppSettingsService()
@@ -50,7 +50,10 @@ public static class AppSettingsService
     /// Reload
     public static void Reload()
     {
-        Current = Load();
+        var loaded = Load();
+        Current.ActionKeys = loaded.ActionKeys;
+        Current.Shortcuts = loaded.Shortcuts;
+        Current.UseDefaultStretchDirection = loaded.UseDefaultStretchDirection;
         SettingsChanged?.Invoke(null, EventArgs.Empty);
     }
 

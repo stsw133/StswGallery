@@ -26,15 +26,31 @@
                     <Image.Style>
                         <Style TargetType="{x:Type Image}">
                             <Setter Property="StretchDirection" Value="DownOnly"/>
+                            <Setter Property="Visibility" Value="Visible"/>
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding ConfigContext.Settings.UseDefaultStretchDirection}" Value="True">
                                     <Setter Property="StretchDirection" Value="Both"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding UseMediaPlayer}" Value="True">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
                     </Image.Style>
                 </Image>
             </se:StswZoomControl>
+            <se:StswMediaPlayer Source="{Binding MediaSource}">
+                <se:StswMediaPlayer.Style>
+                    <Style TargetType="{x:Type se:StswMediaPlayer}">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding UseMediaPlayer}" Value="True">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </se:StswMediaPlayer.Style>
+            </se:StswMediaPlayer>
             <!-- default button -->
             <se:StswSubButton d:Foreground="White"
                               Command="{Binding SelectDirectoryCommand}"
@@ -103,6 +119,22 @@
 							</se:StswButton>
 							<se:StswButton se:StswControl.IsBorderless="True" Command="{Binding ConfigCommand}" Focusable="False">
 								<se:StswIcon Data="{x:Static se:StswIcons.Cog}" Foreground="{DynamicResource StswColor.Neutral}"/>
+							</se:StswButton>
+							<se:StswButton se:StswControl.IsBorderless="True" Command="{Binding ToggleDisplayModeCommand}" Focusable="False" ToolTip="{Binding DisplayModeText}">
+								<se:StswIcon Scale="1.1">
+									<se:StswIcon.Style>
+										<Style TargetType="{x:Type se:StswIcon}">
+											<Setter Property="Data" Value="{x:Static se:StswIcons.ArrowTopRightBottomLeft}"/>
+											<Setter Property="Foreground" Value="{DynamicResource StswColor.Neutral}"/>
+											<Style.Triggers>
+												<DataTrigger Binding="{Binding IsDynamicDisplayMode}" Value="True">
+													<Setter Property="Data" Value="{x:Static se:StswIcons.Refresh}"/>
+													<Setter Property="Foreground" Value="{DynamicResource StswColor.Structure}"/>
+												</DataTrigger>
+											</Style.Triggers>
+										</Style>
+									</se:StswIcon.Style>
+								</se:StswIcon>
 							</se:StswButton>
 							<se:StswButton se:StswControl.IsBorderless="True" Command="{Binding RemoveFileCommand}" Focusable="False">
 								<se:StswIcon Data="{x:Static se:StswIcons.TrashCan}" Foreground="{DynamicResource StswColor.Negative}"/>

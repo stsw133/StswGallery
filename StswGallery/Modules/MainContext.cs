@@ -30,7 +30,40 @@ public partial class MainContext : BaseContext
 		".tiff",
 		".webp"
 	};
+	private static readonly HashSet<string> _supportedMediaExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        // audio
+        ".aac",
+        ".aiff",
+        ".flac",
+        ".m4a",
+        ".mid",
+        ".midi",
+        ".mp3",
+        ".oga",
+        ".ogg",
+        ".opus",
+        ".wav",
+        ".wma",
+        // video
+        ".3g2",
+        ".3gp",
+        ".avi",
+        ".m2ts",
+        ".m4v",
+        ".mkv",
+        ".mov",
+        ".mp4",
+        ".mpeg",
+        ".mpg",
+        ".ogv",
+        ".ts",
+        ".webm",
+        ".wmv"
+    };
 	private static bool IsSupportedImageFile(string path) => _supportedImageExtensions.Contains(Path.GetExtension(path));
+    private static bool IsSupportedMediaFile(string path) => _supportedMediaExtensions.Contains(Path.GetExtension(path));
+    private static bool IsSupportedFile(string path) => IsSupportedImageFile(path) || IsSupportedMediaFile(path);
 
 	[StswObservableProperty] ConfigContext _configContext = new();
 	[StswObservableProperty] FileInfoModel _currentFile = new();
@@ -39,8 +72,13 @@ public partial class MainContext : BaseContext
 	[StswObservableProperty] List<string> _directoryFiles = [];
 	[StswObservableProperty] string? _directoryPath;
 	[StswObservableProperty] ImageSource? _imageSource;
+    [StswObservableProperty] bool _isDynamicDisplayMode;
 	[StswObservableProperty] bool _isConfigOpen;
+    [StswObservableProperty] bool _isMediaFile;
 	[StswObservableProperty] bool _isSidePanelLocked;
+    [StswObservableProperty] string? _mediaSource;
+    [StswObservableProperty] string _displayModeText = "Tryb statyczny";
+    [StswObservableProperty] bool _useMediaPlayer;
 
 	/// Init
 	[StswCommand]
@@ -49,7 +87,7 @@ public partial class MainContext : BaseContext
         App.Current.Exit += OnApplicationExit;
 
         var startupFilePath = App.StartupFilePath;
-        if (!string.IsNullOrEmpty(startupFilePath) && File.Exists(startupFilePath) && IsSupportedImageFile(startupFilePath))
+        if (!string.IsNullOrEmpty(startupFilePath) && File.Exists(startupFilePath) && IsSupportedFile(startupFilePath))
         {
             var directoryPath = Path.GetDirectoryName(startupFilePath);
             if (!string.IsNullOrEmpty(directoryPath))
@@ -142,7 +180,7 @@ public partial class MainContext : BaseContext
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 files = [.. Directory.EnumerateFiles(DirectoryPath)
-                    .Where(IsSupportedImageFile)
+                    .Where(IsSupportedFile)
                     .OrderBy(x => x, new StswNaturalStringComparer())];
             }, cancellationToken);
 
@@ -174,6 +212,15 @@ public partial class MainContext : BaseContext
     /// Config
     [StswCommand]
     void Config() => StswContentDialog.Show(ConfigContext, "ConfigContentDialog");
+
+    /// ToggleDisplayMode
+    [StswCommand]
+    void ToggleDisplayMode()
+    {
+        IsDynamicDisplayMode = !IsDynamicDisplayMode;
+        UpdateDisplayMode();
+        ReadImageFromFile();
+    }
 
     /// RemoveFile
     [StswCommand]
@@ -312,7 +359,7 @@ public partial class MainContext : BaseContext
 	[StswCommand]
 	void RotateFlipImage(RotateFlipType rotateFlipType)
     {
-        if (!File.Exists(CurrentFilePath))
+        if (!File.Exists(CurrentFilePath) || !IsSupportedImageFile(CurrentFilePath))
             return;
 
         var isRotated = false;
@@ -376,14 +423,26 @@ public partial class MainContext : BaseContext
         if (File.Exists(CurrentFilePath))
         {
             StswApp.StswWindow.Title = Path.GetFileName(CurrentFilePath);
+            IsMediaFile = IsSupportedMediaFile(CurrentFilePath);
+            UpdateDisplayMode();
 
-            try
-            {
-                ImageSource = StswFnUI.BytesToBitmapImage(File.ReadAllBytes(CurrentFilePath));
-            }
-            catch
+            if (UseMediaPlayer)
             {
                 ImageSource = null;
+                MediaSource = CurrentFilePath;
+            }
+            else
+            {
+                MediaSource = null;
+
+                try
+                {
+                    ImageSource = StswFnUI.BytesToBitmapImage(File.ReadAllBytes(CurrentFilePath));
+                }
+                catch
+                {
+                    ImageSource = null;
+                }
             }
 
             var info = new FileInfo(CurrentFilePath);
@@ -404,7 +463,18 @@ public partial class MainContext : BaseContext
         {
             StswApp.StswWindow.Title = string.Empty;
             ImageSource = null;
+            IsMediaFile = false;
+            MediaSource = null;
+            CurrentFile = new FileInfoModel();
+            UpdateDisplayMode();
         }
+    }
+
+    /// UpdateDisplayMode
+    private void UpdateDisplayMode()
+    {
+        UseMediaPlayer = IsDynamicDisplayMode || IsMediaFile;
+        DisplayModeText = IsDynamicDisplayMode ? "Tryb dynamiczny" : "Tryb statyczny";
     }
 
     /// UpdateCurrentFilePath

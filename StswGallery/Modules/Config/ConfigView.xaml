@@ -7,7 +7,7 @@
              xmlns:local="clr-namespace:StswGallery"
              mc:Ignorable="d" d:DataContext="{d:DesignInstance local:ConfigContext}"
              MaxHeight="{Binding ActualHeight, RelativeSource={RelativeSource AncestorType={x:Type se:StswContentDialog}}, Converter={x:Static se:StswCalculateConverter.Instance}, ConverterParameter=*0.8}"
-             MaxWidth="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType={x:Type se:StswContentDialog}}, Converter={x:Static se:StswCalculateConverter.Instance}, ConverterParameter=*0.8}">
+             MaxWidth="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType={x:Type se:StswContentDialog}}, Converter={x:Static se:StswCalculateConverter.Instance}, ConverterParameter=*0.95}">
 
     <se:StswGroupBox Padding="0">
         <se:StswGroupBox.Header>
@@ -29,8 +29,9 @@
             <se:StswScrollView>
                 <StackPanel>
                     <se:StswCheckBox Margin="6 10 6 0"
-                                     Content="Allow image upscaling (StretchDirection.Both)"
-                                     IsChecked="{Binding Settings.UseDefaultStretchDirection, Mode=TwoWay}"/>
+                                     Content="Allow image upscaling"
+                                     IsChecked="{Binding Settings.UseDefaultStretchDirection, Mode=TwoWay}"
+                                     ToolTip="When enabled, images smaller than the viewer are enlarged to fit. Large images are always scaled down when needed."/>
 
                     <se:StswSeparator BorderThickness="1"/>
 
@@ -41,10 +42,21 @@
                                   FontWeight="Bold"
                                   HorizontalAlignment="Center"
                                   Margin="0 10 0 0"/>
+
+                    <Grid Margin="6 3 6 0" se:StswGrid.ColumnDefinitions="40,150,320,260,130,140,90">
+                        <se:StswLabel Grid.Column="0" Content="#" FontSize="10" FontWeight="Bold" HorizontalContentAlignment="Center"/>
+                        <se:StswLabel Grid.Column="1" Content="Type" FontSize="10" FontWeight="Bold" HorizontalContentAlignment="Center"/>
+                        <se:StswLabel Grid.Column="2" Content="Target path" FontSize="10" FontWeight="Bold" HorizontalContentAlignment="Center"/>
+                        <se:StswLabel Grid.Column="3" Content="Arguments" FontSize="10" FontWeight="Bold" HorizontalContentAlignment="Center"/>
+                        <se:StswLabel Grid.Column="4" Content="Conflict" FontSize="10" FontWeight="Bold" HorizontalContentAlignment="Center"/>
+                        <se:StswLabel Grid.Column="5" Content="After action" FontSize="10" FontWeight="Bold" HorizontalContentAlignment="Center"/>
+                        <se:StswLabel Grid.Column="6" Content="Create dir" FontSize="10" FontWeight="Bold" HorizontalContentAlignment="Center"/>
+                    </Grid>
+
                     <ItemsControl DockPanel.Dock="Top" Margin="3" ItemsSource="{Binding Settings.Shortcuts}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Grid Margin="3" se:StswGrid.ColumnDefinitions="40,150,500">
+                                <Grid Margin="3" se:StswGrid.ColumnDefinitions="40,150,320,260,130,140,90">
                                     <se:StswLabel Grid.Column="0"
                                                   Content="{Binding Number}"
                                                   HorizontalContentAlignment="Right"
@@ -54,10 +66,35 @@
                                                      ItemsSource="{Binding DataContext.ShortcutTypes, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}, Mode=OneTime}"
                                                      Margin="3"
                                                      SelectedValue="{Binding Type, Mode=TwoWay}"
-                                                     SelectedValuePath="Value"/>
+                                                     SelectedValuePath="Value"
+                                                     ToolTip="Operation assigned to this number shortcut."/>
                                     <se:StswTextBox Grid.Column="2"
                                                     Margin="3"
-                                                    Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                                    Text="{Binding TargetPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                    ToolTip="Folder path for Move/Copy, executable path for Open with."/>
+                                    <se:StswTextBox Grid.Column="3"
+                                                    Margin="3"
+                                                    Text="{Binding Arguments, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                    ToolTip="Optional Open with argument template. Supported tokens: {file}, {directory}, {name}, {nameWithoutExtension}, {extension}. Empty means &quot;{file}&quot;."/>
+                                    <se:StswComboBox Grid.Column="4"
+                                                     DisplayMemberPath="Display"
+                                                     ItemsSource="{Binding DataContext.FileConflictModes, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}, Mode=OneTime}"
+                                                     Margin="3"
+                                                     SelectedValue="{Binding ConflictMode, Mode=TwoWay}"
+                                                     SelectedValuePath="Value"
+                                                     ToolTip="What to do when the target file already exists."/>
+                                    <se:StswComboBox Grid.Column="5"
+                                                     DisplayMemberPath="Display"
+                                                     ItemsSource="{Binding DataContext.AfterShortcutActions, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}, Mode=OneTime}"
+                                                     Margin="3"
+                                                     SelectedValue="{Binding AfterAction, Mode=TwoWay}"
+                                                     SelectedValuePath="Value"
+                                                     ToolTip="What to select after a shortcut operation completes."/>
+                                    <se:StswCheckBox Grid.Column="6"
+                                                     HorizontalAlignment="Center"
+                                                     IsChecked="{Binding CreateTargetDirectory, Mode=TwoWay}"
+                                                     Margin="3"
+                                                     ToolTip="Create the target directory automatically when it does not exist."/>
                                 </Grid>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
@@ -84,7 +121,8 @@
                                     <se:StswComboBox Grid.Column="1"
                                                      ItemsSource="{Binding DataContext.AvailableKeys, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}, Mode=OneTime}"
                                                      Margin="3"
-                                                     SelectedItem="{Binding Key, Mode=TwoWay}"/>
+                                                     SelectedItem="{Binding Key, Mode=TwoWay}"
+                                                     ToolTip="Keyboard shortcut for this application action."/>
                                 </Grid>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>

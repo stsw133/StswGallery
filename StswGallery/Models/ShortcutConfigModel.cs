@@ -35,17 +35,31 @@ public class ShortcutConfigModel : StswObservableObject
         }
     }
 
-    public string? Value
+    public string? TargetPath
     {
-        get => AppSettingsService.GetShortcut(Number).Value;
+        get => AppSettingsService.GetShortcut(Number).TargetPath;
         set
         {
             var shortcut = AppSettingsService.GetShortcut(Number);
-            if (shortcut.Value == value)
+            if (shortcut.TargetPath == value)
                 return;
 
-            shortcut.Value = value;
-            OnPropertyChanged(nameof(Value));
+            shortcut.TargetPath = value;
+            OnPropertyChanged(nameof(TargetPath));
+        }
+    }
+
+    public string? Arguments
+    {
+        get => AppSettingsService.GetShortcut(Number).Arguments;
+        set
+        {
+            var shortcut = AppSettingsService.GetShortcut(Number);
+            if (shortcut.Arguments == value)
+                return;
+
+            shortcut.Arguments = value;
+            OnPropertyChanged(nameof(Arguments));
         }
     }
 
@@ -53,6 +67,7 @@ public class ShortcutConfigModel : StswObservableObject
     private void OnSettingsChanged(object? sender, EventArgs e)
     {
         OnPropertyChanged(nameof(Type));
-        OnPropertyChanged(nameof(Value));
+        OnPropertyChanged(nameof(TargetPath));
+        OnPropertyChanged(nameof(Arguments));
     }
 }

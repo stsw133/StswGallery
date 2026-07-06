@@ -11,9 +11,6 @@
                Title=""
                Loaded="{se:StswEventToCommand InitCommand}"
                PreviewKeyDown="{se:StswEventToCommand KeyPressCommand, PassEventArgs=True}">
-    <se:StswWindow.DataContext>
-        <local:MainContext/>
-    </se:StswWindow.DataContext>
     <se:StswWindow.Resources>
         <se:StswBindingProxy x:Key="proxy" Proxy="{Binding}"/>
     </se:StswWindow.Resources>
@@ -22,17 +19,23 @@
         <Grid>
             <!-- image -->
             <se:StswZoomControl x:Name="ZoomControl">
+                <se:StswZoomControl.Style>
+                    <Style TargetType="{x:Type se:StswZoomControl}">
+                        <Setter Property="Visibility" Value="Visible"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding UseMediaPlayer}" Value="True">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </se:StswZoomControl.Style>
                 <Image Source="{Binding ImageSource}" Stretch="Uniform" RenderOptions.BitmapScalingMode="Fant">
                     <Image.Style>
                         <Style TargetType="{x:Type Image}">
                             <Setter Property="StretchDirection" Value="DownOnly"/>
-                            <Setter Property="Visibility" Value="Visible"/>
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding ConfigContext.Settings.UseDefaultStretchDirection}" Value="True">
                                     <Setter Property="StretchDirection" Value="Both"/>
-                                </DataTrigger>
-                                <DataTrigger Binding="{Binding UseMediaPlayer}" Value="True">
-                                    <Setter Property="Visibility" Value="Collapsed"/>
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
@@ -73,10 +76,10 @@
                         <!-- top side -->
                         <DockPanel DockPanel.Dock="Top">
                             <!-- left side -->
-                            <se:StswButton se:StswControl.IsBorderless="True" Command="{Binding SelectDirectoryCommand}" Focusable="False">
+                            <se:StswButton se:StswControl.IsBorderless="True" Command="{Binding SelectDirectoryCommand}" Focusable="False" ToolTip="Select directory">
 								<se:StswIcon Data="{x:Static se:StswIcons.FolderOpen}" Foreground="{DynamicResource StswColor.Structure}"/>
                             </se:StswButton>
-                            <se:StswButton se:StswControl.IsBorderless="True" Command="{Binding RefreshCommand}" Focusable="False">
+                            <se:StswButton se:StswControl.IsBorderless="True" Command="{Binding RefreshCommand}" Focusable="False" ToolTip="Refresh file list">
 								<se:StswIcon Data="{x:Static se:StswIcons.Refresh}" Foreground="{DynamicResource StswColor.Neutral}"/>
                             </se:StswButton>
 							<se:StswSeparator Orientation="Vertical"/>
@@ -100,7 +103,7 @@
                         <!-- bottom side -->
                         <DockPanel DockPanel.Dock="Top">
                             <!-- left size -->
-							<se:StswButton se:StswControl.IsBorderless="True" Command="{Binding LockSidePanelCommand}" Focusable="False" Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}">
+							<se:StswButton se:StswControl.IsBorderless="True" Command="{Binding LockSidePanelCommand}" Focusable="False" ToolTip="Lock side panel" Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}">
 								<se:StswIcon Scale="1.1">
 									<se:StswIcon.Style>
 										<Style TargetType="{x:Type se:StswIcon}">
@@ -117,7 +120,7 @@
                                     </se:StswIcon.Style>
                                 </se:StswIcon>
 							</se:StswButton>
-							<se:StswButton se:StswControl.IsBorderless="True" Command="{Binding ConfigCommand}" Focusable="False">
+							<se:StswButton se:StswControl.IsBorderless="True" Command="{Binding ConfigCommand}" Focusable="False" ToolTip="Open settings">
 								<se:StswIcon Data="{x:Static se:StswIcons.Cog}" Foreground="{DynamicResource StswColor.Neutral}"/>
 							</se:StswButton>
 							<se:StswButton se:StswControl.IsBorderless="True" Command="{Binding ToggleDisplayModeCommand}" Focusable="False" ToolTip="{Binding DisplayModeText}">
@@ -136,10 +139,11 @@
 									</se:StswIcon.Style>
 								</se:StswIcon>
 							</se:StswButton>
-							<se:StswButton se:StswControl.IsBorderless="True" Command="{Binding RemoveFileCommand}" Focusable="False">
+							<se:StswButton se:StswControl.IsBorderless="True" Command="{Binding RemoveFileCommand}" Focusable="False" ToolTip="Move current file to Recycle Bin">
 								<se:StswIcon Data="{x:Static se:StswIcons.TrashCan}" Foreground="{DynamicResource StswColor.Negative}"/>
 							</se:StswButton>
 							<se:StswDropButton Focusable="False"
+                                               ToolTip="Edit image"
                                                se:StswControl.IsBorderless="True"
                                                se:StswDropArrow.Visibility="Collapsed"
                                                se:StswPopup.Background="Transparent">
@@ -147,26 +151,26 @@
 									<se:StswIcon Data="{x:Static se:StswIcons.Pencil}" Foreground="{DynamicResource StswColor.Neutral}"/>
 								</se:StswDropButton.Header>
 								<StackPanel Orientation="Horizontal">
-									<se:StswButton se:StswControl.IsBorderless="True" Command="{Binding RotateFlipImageCommand}" CommandParameter="{x:Static drawing:RotateFlipType.Rotate90FlipNone}" Focusable="False">
+									<se:StswButton se:StswControl.IsBorderless="True" Command="{Binding RotateFlipImageCommand}" CommandParameter="{x:Static drawing:RotateFlipType.Rotate90FlipNone}" Focusable="False" ToolTip="Rotate left">
 										<se:StswIcon Data="{x:Static se:StswIcons.RotateLeft}"/>
 									</se:StswButton>
-									<se:StswButton se:StswControl.IsBorderless="True" Command="{Binding RotateFlipImageCommand}" CommandParameter="{x:Static drawing:RotateFlipType.Rotate270FlipNone}" Focusable="False">
+									<se:StswButton se:StswControl.IsBorderless="True" Command="{Binding RotateFlipImageCommand}" CommandParameter="{x:Static drawing:RotateFlipType.Rotate270FlipNone}" Focusable="False" ToolTip="Rotate right">
 										<se:StswIcon Data="{x:Static se:StswIcons.RotateRight}"/>
 									</se:StswButton>
-									<se:StswButton se:StswControl.IsBorderless="True" Command="{Binding RotateFlipImageCommand}" CommandParameter="{x:Static drawing:RotateFlipType.RotateNoneFlipX}" Focusable="False">
+									<se:StswButton se:StswControl.IsBorderless="True" Command="{Binding RotateFlipImageCommand}" CommandParameter="{x:Static drawing:RotateFlipType.RotateNoneFlipX}" Focusable="False" ToolTip="Flip horizontally">
 										<se:StswIcon Data="{x:Static se:StswIcons.FlipHorizontal}"/>
 									</se:StswButton>
-									<se:StswButton se:StswControl.IsBorderless="True" Command="{Binding RotateFlipImageCommand}" CommandParameter="{x:Static drawing:RotateFlipType.RotateNoneFlipY}" Focusable="False">
+									<se:StswButton se:StswControl.IsBorderless="True" Command="{Binding RotateFlipImageCommand}" CommandParameter="{x:Static drawing:RotateFlipType.RotateNoneFlipY}" Focusable="False" ToolTip="Flip vertically">
 										<se:StswIcon Data="{x:Static se:StswIcons.FlipVertical}"/>
 									</se:StswButton>
 								</StackPanel>
 							</se:StswDropButton>
 							<!-- right side -->
 							<StackPanel DockPanel.Dock="Right" HorizontalAlignment="Right" Orientation="Horizontal">
-								<se:StswButton se:StswControl.IsBorderless="True" Command="{Binding PreviousFileCommand}" Focusable="False">
+								<se:StswButton se:StswControl.IsBorderless="True" Command="{Binding PreviousFileCommand}" Focusable="False" ToolTip="Previous file">
 									<se:StswIcon Data="{x:Static se:StswIcons.ArrowLeft}"/>
 								</se:StswButton>
-								<se:StswButton se:StswControl.IsBorderless="True" Command="{Binding NextFileCommand}" Focusable="False">
+								<se:StswButton se:StswControl.IsBorderless="True" Command="{Binding NextFileCommand}" Focusable="False" ToolTip="Next file">
 									<se:StswIcon Data="{x:Static se:StswIcons.ArrowRight}"/>
 								</se:StswButton>
 							</StackPanel>
@@ -177,6 +181,11 @@
                                           IconData="{x:Static se:StswIcons.MagnifyPlus}" IconScale="1.1"
                                           Width="100"/>
 							<se:StswSeparator DockPanel.Dock="Right" Orientation="Vertical"/>
+                                <se:StswLabel DockPanel.Dock="Right"
+                                              Content="{Binding FileCounterText}"
+                                              HorizontalContentAlignment="Center"
+                                              Width="100"/>
+                                <se:StswSeparator DockPanel.Dock="Right" Orientation="Vertical"/>
                             <!-- center -->
                             <ItemsControl HorizontalAlignment="Center" ItemsSource="{Binding ConfigContext.Settings.Shortcuts}">
                                 <ItemsControl.ItemsPanel>
@@ -190,6 +199,7 @@
                                                        Command="{Binding Proxy.KeyNumberCommand, Source={StaticResource proxy}}"
                                                        CommandParameter="{Binding Number}"
                                                        Focusable="False"
+                                                       ToolTip="Run number shortcut"
                                                        Margin="0">
                                             <se:StswLabel Content="{Binding Number}" HorizontalContentAlignment="Center" Width="20"/>
                                         </se:StswButton>

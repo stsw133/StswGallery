@@ -8,11 +8,43 @@ public enum ShortcutType
     [Description("None")]
     None = 0,
 
-    [Description("Move to")]
+    [Description("Move to folder")]
     MoveTo = 1,
 
+    [Description("Copy to folder")]
+    CopyTo = 2,
+
     [Description("Open with")]
-    OpenWith = 2
+    OpenWith = 3
+}
+
+/// FileConflictMode
+public enum FileConflictMode
+{
+    [Description("Rename")]
+    Rename = 0,
+
+    [Description("Skip")]
+    Skip = 1,
+
+    [Description("Overwrite")]
+    Overwrite = 2
+}
+
+/// AfterShortcutAction
+public enum AfterShortcutAction
+{
+    [Description("Select next")]
+    SelectNext = 0,
+
+    [Description("Select previous")]
+    SelectPrevious = 1,
+
+    [Description("Keep index")]
+    KeepIndex = 2,
+
+    [Description("Refresh only")]
+    RefreshOnly = 3
 }
 
 /// ActionKeyType

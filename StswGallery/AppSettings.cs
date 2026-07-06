@@ -26,6 +26,17 @@ public class ShortcutSetting
 {
     public int Number { get; set; }
     public ShortcutType Type { get; set; }
+    public string? TargetPath { get; set; }
+    public string? Arguments { get; set; }
+    public FileConflictMode ConflictMode { get; set; } = FileConflictMode.Rename;
+    public AfterShortcutAction AfterAction { get; set; } = AfterShortcutAction.SelectNext;
+    public bool CreateTargetDirectory { get; set; } = true;
+
+    /// <summary>
+    /// Backward compatibility for old appsettings.json files that used Value as the shortcut target.
+    /// This property is read by ConfigurationBinder, migrated to TargetPath, and not written back by JsonSerializer.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Value { get; set; }
 }
 
@@ -113,7 +124,9 @@ public static class AppSettingsService
         }
         catch
         {
-            return new AppSettings();
+            var settings = new AppSettings();
+            EnsureDefaults(settings);
+            return settings;
         }
     }
 
@@ -123,6 +136,7 @@ public static class AppSettingsService
         settings.Shortcuts ??= [];
 
         var shortcutsByNumber = settings.Shortcuts
+            .Where(s => s.Number is >= 0 and <= 9)
             .GroupBy(s => s.Number)
             .ToDictionary(g => g.Key, g => g.Last());
 
@@ -134,9 +148,24 @@ public static class AppSettingsService
                 shortcut = new ShortcutSetting
                 {
                     Number = number,
-                    Type = ShortcutType.MoveTo,
-                    Value = string.Empty
+                    Type = ShortcutType.None,
+                    TargetPath = string.Empty,
+                    Arguments = string.Empty,
+                    ConflictMode = FileConflictMode.Rename,
+                    AfterAction = AfterShortcutAction.SelectNext,
+                    CreateTargetDirectory = true
                 };
+            }
+            else
+            {
+                shortcut.Number = number;
+
+                if (shortcut.TargetPath == null && shortcut.Value != null)
+                    shortcut.TargetPath = shortcut.Value;
+
+                shortcut.Value = null;
+                shortcut.TargetPath ??= string.Empty;
+                shortcut.Arguments ??= string.Empty;
             }
 
             orderedShortcuts.Add(shortcut);
@@ -185,6 +214,8 @@ public static class AppSettingsService
     {
         { ActionKeyType.PreviousFile, Key.Left },
         { ActionKeyType.NextFile, Key.Right },
+        { ActionKeyType.FirstFile, Key.Home },
+        { ActionKeyType.LastFile, Key.End },
         { ActionKeyType.RotateLeft, Key.Q },
         { ActionKeyType.RotateRight, Key.E },
         { ActionKeyType.RandomFile, Key.Z },
